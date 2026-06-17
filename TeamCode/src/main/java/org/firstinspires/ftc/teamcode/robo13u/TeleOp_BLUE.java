@@ -187,7 +187,6 @@ public class TeleOp_BLUE extends LinearOpMode {
             robot.update();
         }
 
-        robot.stop();
     }
 
 }

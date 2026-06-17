@@ -51,12 +51,6 @@ public class Robot {
     public final Outtake outtake;
     public final Lift lift;
 
-    public Limelight3A limelight;
-
-    private double limelightTx = 0.0;
-    private boolean limelightHasTarget = false;
-    public static int LIMELIGHT_PIPELINE = 0;
-
     private final VoltageSensor voltageSensor;
     public final PoseTracker poseTracker;
 
@@ -66,7 +60,6 @@ public class Robot {
     private final LynxModule controlHub;
     private final LynxModule expansionHub;
 
-    private double lastTelemetryLooptimeLog;
     public static double lastVoltageReading = 12.0;
     public HardwareMap hardwareMap = null;
 
@@ -90,10 +83,6 @@ public class Robot {
         downLeftLiftServo = hardwareMap.get(CRServo.class, "downLeftLiftServo");
         upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
         downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
-
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(LIMELIGHT_PIPELINE);
-        limelight.start();
 
         poseTracker = new PoseTracker(new PinpointLocalizer(hardwareMap, Constants.localizerConstants));
 
@@ -153,19 +142,8 @@ public class Robot {
 
         poseTracker.update();
 
-        LLResult result = limelight.getLatestResult();
-
-        if (result != null && result.isValid()) {
-            limelightTx = result.getTx();
-            limelightHasTarget = true;
-        }
-        else {
-            limelightTx = 0.0;
-            limelightHasTarget = false;
-        }
-
         intake.update(lastVoltageReading);
-        outtake.update(lastVoltageReading, poseTracker.getPose(), poseTracker.getVelocity(), poseTracker.getAcceleration(), limelightTx, limelightHasTarget, packet);
+        outtake.update(lastVoltageReading, poseTracker.getPose(), poseTracker.getVelocity(), poseTracker.getAcceleration(), packet);
         /*
         double currentSeconds = System.nanoTime() / 1e9;
         double loopTime = currentSeconds - lastTelemetryLooptimeLog;
@@ -204,12 +182,6 @@ public class Robot {
     public void drive(double forward, double strafe, double rotate)
     {
         mecanumDrive.driveRobotCentric(forward, strafe, rotate);
-    }
-
-    public void stop() {
-        if (limelight != null) {
-            limelight.stop();
-        }
     }
 
 }

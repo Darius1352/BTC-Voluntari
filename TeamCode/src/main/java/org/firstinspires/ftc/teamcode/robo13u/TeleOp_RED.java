@@ -186,7 +186,6 @@ public class TeleOp_RED extends LinearOpMode {
             robot.update();
         }
 
-        robot.stop();
     }
 
 }

@@ -60,10 +60,6 @@ public class Outtake {
 
     public double distanceToGoal = 120;
     public static boolean DEBUG_DRAWING = false;
-    private double lastTurretPos = 0.5;
-    public static double WEIGHT_ODOMETRY = 0.7;
-    public static double WEIGHT_LIMELIGHT = 0.3;
-    public static boolean USE_LIMELIGHT = false;
 
     public enum OuttakeState {
         SHOOT(),
@@ -318,7 +314,7 @@ public class Outtake {
         GOAL_Y = y;
     }
 
-    public void update (double voltage, Pose robotPose, Vector robotVelocity, Vector robotAcceleration, double limelightTx, boolean limelightHasTarget, TelemetryPacket packet) {
+    public void update (double voltage, Pose robotPose, Vector robotVelocity, Vector robotAcceleration, TelemetryPacket packet) {
 
         double robotHeadingRadians = robotPose.getHeading();
         double robotHeadingDegrees = Math.toDegrees(robotHeadingRadians);
@@ -365,16 +361,7 @@ public class Outtake {
         double target_angle = 0;
         if(getTurretState() == TurretState.AUTO){
             double targetFieldDegrees = Math.toDegrees(Math.atan2(targetDiffY, targetDiffX));
-            double odometryTargetAngle = normalizeAngle(targetFieldDegrees - robotHeadingDegrees + pad_offset);
-
-            if (USE_LIMELIGHT && limelightHasTarget) {
-                double currentActualAngle = (lastTurretPos - TURRET_CENTER_POS) * TOTAL_SERVO_RANGE_DEGREES;
-                double limelightTargetAngle = currentActualAngle + limelightTx;
-                target_angle = (odometryTargetAngle * WEIGHT_ODOMETRY) + (limelightTargetAngle * WEIGHT_LIMELIGHT);
-            }
-            else{
-                target_angle = odometryTargetAngle;
-            }
+            target_angle = normalizeAngle(targetFieldDegrees - robotHeadingDegrees + pad_offset);
 
             target_angle = Math.max(min_turret_angle, Math.min(target_angle, max_turret_angle));
         }
@@ -403,6 +390,7 @@ public class Outtake {
             double TPSCorrection = effectiveVelocity / correctionFactor;
 
             targetTPS = baseTPS - TPSCorrection;
+
             shooterPIDF.setPIDF(sP, 0, 0, 0);
             feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 

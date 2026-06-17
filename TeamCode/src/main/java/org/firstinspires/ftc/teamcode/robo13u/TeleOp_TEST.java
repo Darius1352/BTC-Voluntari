@@ -185,7 +185,6 @@ public class TeleOp_TEST extends LinearOpMode {
             robot.update();
         }
 
-        robot.stop();
     }
 
 }
