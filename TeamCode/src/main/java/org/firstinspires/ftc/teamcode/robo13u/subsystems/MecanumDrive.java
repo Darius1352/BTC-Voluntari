@@ -11,8 +11,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.robo13u.Robot;
 import org.firstinspires.ftc.teamcode.utils.Imu;
 
-public class MecanumDrive
-{
+public class MecanumDrive {
     public static double K_STATIC = 0.15;
 
     public DcMotorEx leftFront;
