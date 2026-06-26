@@ -130,6 +130,7 @@ public class Outtake {
         setTurretState(TurretState.FRONT);
 
         this.shooterPIDF = new PIDFController(sP, sI, sD, 0);
+        this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 
         this.leftShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         this.leftShooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -363,6 +364,13 @@ public class Outtake {
             double targetFieldDegrees = Math.toDegrees(Math.atan2(targetDiffY, targetDiffX));
             target_angle = normalizeAngle(targetFieldDegrees - robotHeadingDegrees + pad_offset);
 
+            if (target_angle < min_turret_angle && (target_angle + 360.0) <= max_turret_angle) {
+                target_angle += 360.0;
+            }
+            else if (target_angle > max_turret_angle && (target_angle - 360.0) >= min_turret_angle) {
+                target_angle -= 360.0;
+            }
+
             target_angle = Math.max(min_turret_angle, Math.min(target_angle, max_turret_angle));
         }
         else if (getTurretState() == TurretState.FRONT) {
@@ -413,10 +421,10 @@ public class Outtake {
 
             targetTPS = test_TPS;
 
-            double currentTPS = rightShooterMotor.getVelocity();
+            double currentTPS = leftShooterMotor.getVelocity();
 
             double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
-            double ffOutput = feedforward.calculate(targetTPS)*(12.0 / voltage);
+            double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
 
             double finalPower = pidCorrection + ffOutput;
 
@@ -432,10 +440,10 @@ public class Outtake {
 
             targetTPS = 0;
 
-            double currentTPS = rightShooterMotor.getVelocity();
+            double currentTPS = leftShooterMotor.getVelocity();
 
             double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
-            double ffOutput = feedforward.calculate(targetTPS)*(12.0 / voltage);
+            double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
 
             double finalPower = pidCorrection + ffOutput;
 

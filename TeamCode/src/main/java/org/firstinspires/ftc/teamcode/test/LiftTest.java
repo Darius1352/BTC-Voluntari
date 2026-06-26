@@ -8,18 +8,13 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@TeleOp(name = "Lift_Encoder_Test", group = "Test")
+@TeleOp(name = "Lift_Test", group = "Test")
 public class LiftTest extends LinearOpMode {
 
     private CRServo upLeftLiftServo;
     private CRServo downLeftLiftServo;
     private CRServo upRightLiftServo;
     private CRServo downRightLiftServo;
-
-    private AnalogInput liftEncoderLeft;
-    private AnalogInput liftEncoderRight;
-
-    private MultipleTelemetry telemetry;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -29,9 +24,6 @@ public class LiftTest extends LinearOpMode {
         downLeftLiftServo = hardwareMap.get(CRServo.class, "downLeftLiftServo");
         upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
         downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
-
-        liftEncoderLeft = hardwareMap.get(AnalogInput.class, "liftEncoderLeft");
-        liftEncoderRight = hardwareMap.get(AnalogInput.class, "liftEncoderRight");
 
         telemetry.addData("Status: ", "init");
         telemetry.update();
@@ -46,23 +38,15 @@ public class LiftTest extends LinearOpMode {
                 manualPower = -0.5;
             }
 
-            upLeftLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
+            upLeftLiftServo.setDirection(DcMotorSimple.Direction.REVERSE);
             downLeftLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
             upRightLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-            downRightLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
+            downRightLiftServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
             upLeftLiftServo.setPower(manualPower);
             downLeftLiftServo.setPower(manualPower);
             upRightLiftServo.setPower(manualPower);
             downRightLiftServo.setPower(manualPower);
-
-            double leftVoltage = liftEncoderLeft.getVoltage();
-            double rightVoltage = liftEncoderRight.getVoltage();
-
-            telemetry.addData("Left Encoder Voltage", String.format("%.4f V", leftVoltage));
-            telemetry.addData("Right Encoder Voltage", String.format("%.4f V", rightVoltage));
-
-            telemetry.update();
         }
     }
 }
