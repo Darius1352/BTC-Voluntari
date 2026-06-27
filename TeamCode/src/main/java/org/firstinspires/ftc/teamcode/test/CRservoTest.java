@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.test;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp(name = "Continuous_Servo_Test")
 public class CRservoTest extends LinearOpMode {
@@ -16,13 +17,13 @@ public class CRservoTest extends LinearOpMode {
         CRServo downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
 
         upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
-        downLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
-        upRightLiftServo.setDirection(CRServo.Direction.FORWARD);
+        downLeftLiftServo.setDirection(CRServo.Direction.REVERSE);
+        upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
         downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
         if (gamepad1.square) {
             upLeftLiftServo.setPower(0.5);
-            downLeftLiftServo.setPower(-0.5);
+            downLeftLiftServo.setPower(0.5);
             telemetry.addData("Running Motor: ", "leftServos");
         } else {
             upLeftLiftServo.setPower(0);
@@ -31,7 +32,7 @@ public class CRservoTest extends LinearOpMode {
 
         if (gamepad1.circle) {
             upRightLiftServo.setPower(0.5);
-            downRightLiftServo.setPower(-0.5);
+            downRightLiftServo.setPower(0.5);
             telemetry.addData("Running Motor: ", "rightServos");
         } else {
             upRightLiftServo.setPower(0);

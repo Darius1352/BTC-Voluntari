@@ -38,10 +38,10 @@ public class LiftTest extends LinearOpMode {
                 manualPower = -0.5;
             }
 
-            upLeftLiftServo.setDirection(DcMotorSimple.Direction.REVERSE);
-            downLeftLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-            upRightLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-            downRightLiftServo.setDirection(DcMotorSimple.Direction.REVERSE);
+            upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
+            downLeftLiftServo.setDirection(CRServo.Direction.REVERSE);
+            upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
+            downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
             upLeftLiftServo.setPower(manualPower);
             downLeftLiftServo.setPower(manualPower);

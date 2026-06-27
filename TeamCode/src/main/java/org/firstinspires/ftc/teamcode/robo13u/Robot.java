@@ -104,10 +104,10 @@ public class Robot {
         leftTurretServo.setDirection(Servo.Direction.FORWARD);
         rightTurretServo.setDirection(Servo.Direction.FORWARD);
 
-        upLeftLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-        downLeftLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-        upRightLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
-        downRightLiftServo.setDirection(DcMotorSimple.Direction.FORWARD);
+        upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
+        downLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
+        upRightLiftServo.setDirection(CRServo.Direction.FORWARD);
+        downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
         mecanumDrive = new MecanumDrive(linearOpMode, this);
         intake = new Intake(rightIntakeMotor, leftIntakeMotor, lockServo);
