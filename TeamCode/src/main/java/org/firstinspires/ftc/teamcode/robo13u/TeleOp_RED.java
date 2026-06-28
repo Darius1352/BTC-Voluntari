@@ -23,18 +23,17 @@ public class TeleOp_RED extends LinearOpMode {
     private static Robot robot;
     private GamepadEx gamepad;
     private Command runningCommand;
-    public static boolean slow_shooting = false;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
-        robot = new Robot(this, new Pose(0, 0, 0));
+        robot = new Robot(this, new Pose(132, 9, 0));
         gamepad = new GamepadEx(gamepad1);
 
         new ParallelCommand(
                 new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                 new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE)),
+                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST_IDLE)),
                 new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                 new InstantCommand(()-> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE)),
@@ -48,6 +47,8 @@ public class TeleOp_RED extends LinearOpMode {
         waitForStart();
 
         while(!isStopRequested() && opModeIsActive()) {
+
+            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE));
 
             if(gamepad.wasJustPressed(GamepadEx.Button.cross)){
                 if(robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.INTAKING) {
@@ -84,24 +85,13 @@ public class TeleOp_RED extends LinearOpMode {
                     );
                 }
                 else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.intake.getLockState() == Intake.LockState.LOCKED){
-                    if(!slow_shooting) {
-                        runningCommand = new SequentialCommand(
-                                new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
-                                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
-                                new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
-                                new SleepCommand(0.05),
-                                new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING))
-                        );
-                    }
-                    else {
-                        runningCommand = new SequentialCommand(
-                                new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
-                                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
-                                new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
-                                new SleepCommand(0.05),
-                                new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING_SLOW))
-                        );
-                    }
+                    runningCommand = new SequentialCommand(
+                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
+                            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
+                            new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
+                            new SleepCommand(0.05),
+                            new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING))
+                    );
                 }
                 else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.intake.getLockState() == Intake.LockState.TRANSFER) {
                     runningCommand = new SequentialCommand(
@@ -127,15 +117,6 @@ public class TeleOp_RED extends LinearOpMode {
                     runningCommand = new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO));
                 } else if (robot.outtake.getTurretState() == Outtake.TurretState.AUTO) {
                     runningCommand = new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT));
-                }
-            }
-
-            if(gamepad.wasJustPressed(GamepadEx.Button.touchpad)){
-                slow_shooting = !slow_shooting;
-                if (slow_shooting) {
-                    runningCommand = new InstantCommand(()-> robot.outtake.incrementShooterSlower());
-                } else {
-                    runningCommand = new InstantCommand(()-> robot.outtake.incrementShooterFaster());
                 }
             }
 

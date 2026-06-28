@@ -70,6 +70,7 @@ public class Outtake {
     public enum ShooterState {
         SHOOT(1),
         IDLE(0),
+        TEST_IDLE(0),
         POWER(0),
         TEST(0);
 
@@ -435,6 +436,25 @@ public class Outtake {
             rightShooterMotor.setPower(finalPower);
         }
         else if(getShooterState() == ShooterState.IDLE){
+            shooterPIDF.setPIDF(sP, sI, sD, 0);
+            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
+
+            targetTPS = 1500;
+
+            double currentTPS = leftShooterMotor.getVelocity();
+
+            double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
+            double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
+
+            double finalPower = pidCorrection + ffOutput;
+
+            if (finalPower > 1.0) finalPower = 1.0;
+            if (finalPower < 0.0) finalPower = 0.0;
+
+            leftShooterMotor.setPower(finalPower);
+            rightShooterMotor.setPower(finalPower);
+        }
+        else if(getShooterState() == ShooterState.TEST_IDLE){
             shooterPIDF.setPIDF(sP, sI, sD, 0);
             feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 

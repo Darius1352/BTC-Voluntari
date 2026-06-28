@@ -28,13 +28,13 @@ public class TeleOp_BLUE extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
-        robot = new Robot(this, new Pose(0, 0, Math.toDegrees(180)));
+        robot = new Robot(this, new Pose(9, 9, Math.toDegrees(180)));
         gamepad = new GamepadEx(gamepad1);
 
         new ParallelCommand(
                 new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                 new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE)),
+                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST_IDLE)),
                 new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                 new InstantCommand(()-> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE)),
@@ -48,6 +48,8 @@ public class TeleOp_BLUE extends LinearOpMode {
         waitForStart();
 
         while(!isStopRequested() && opModeIsActive()) {
+
+            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE));
 
             if(gamepad.wasJustPressed(GamepadEx.Button.cross)){
                 if(robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.INTAKING) {
