@@ -165,7 +165,7 @@ public class TeleOp_RED extends LinearOpMode {
 
             if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
                 runningCommand = new SequentialCommand(
-                        new InstantCommand(()-> robot.poseTracker.setCurrentPoseWithOffset(new Pose(0,0,0))),
+                        new InstantCommand(()-> robot.follower.setPose(new Pose(132, 9, 0))),
                         new InstantCommand(()-> robot.outtake.setPadOffset(0)),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),

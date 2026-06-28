@@ -15,30 +15,29 @@ import org.firstinspires.ftc.teamcode.commandbase.InstantCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SequentialCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SleepCommand;
 import org.firstinspires.ftc.teamcode.commandbase.WaitUntilCommand;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 
 @Autonomous
-public class AUTO extends LinearOpMode {
+public class AUTO_RED extends LinearOpMode {
 
     private static Robot robot;
     public Follower follower;
     private ElapsedTime pathTimer;
 
-    private final Pose startPose = new Pose(56, 9, Math.toRadians(180));
-    private final Pose preloadPose = new Pose(51, 12, Math.toRadians(180));
-    private final Pose bottomCollectPose = new Pose(23, 30);
-    private final Pose bottomShootPose = new Pose(45, 10, Math.toRadians(180));
-    private final Pose firstCollectPose = new Pose(10, 10);
-    private final Pose firstShootPose = new Pose(45, 10);
-    private final Pose secondCollectPose = new Pose(10, 10);
-    private final Pose secondShootPose = new Pose(45, 10);
-    private final Pose thirdCollectPose = new Pose(10, 10);
-    private final Pose thirdShootPose = new Pose(45, 10);
-    private final Pose fourthCollectPose = new Pose(10, 10);
-    private final Pose fourthShootPose = new Pose(45, 10);
-    private final Pose parkPose = new Pose(9, 9, Math.toRadians(180));
+    private final Pose startPose = new Pose(85, 9, Math.toRadians(90));
+    private final Pose preloadPose = new Pose(89, 13, Math.toRadians(90));
+    private final Pose bottomCollectPose = new Pose(118, 30, Math.toRadians(90));
+    private final Pose bottomShootPose = new Pose(95, 10, 0);
+    private final Pose firstCollectPose = new Pose(132, 10);
+    private final Pose firstShootPose = new Pose(95, 10);
+    private final Pose secondCollectPose = new Pose(132, 10);
+    private final Pose secondShootPose = new Pose(95, 10);
+    private final Pose thirdCollectPose = new Pose(132, 10);
+    private final Pose thirdShootPose = new Pose(95, 10);
+    private final Pose fourthCollectPose = new Pose(132, 10);
+    private final Pose fourthShootPose = new Pose(95, 10);
+    private final Pose parkPose = new Pose(132, 9, 0);
 
     private PathChain preload, bottomCollect, bottomShoot, firstCollect, firstShoot, secondCollect, secondShoot, thirdCollect, thirdShoot, fourthCollect, fourthShoot, park;
 
@@ -47,8 +46,7 @@ public class AUTO extends LinearOpMode {
 
         robot = new Robot(this, startPose);
         robot.mecanumDrive.imu.resetYaw();
-        follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startPose);
+        follower = robot.follower;
 
         pathTimer = new ElapsedTime();
 
@@ -100,7 +98,7 @@ public class AUTO extends LinearOpMode {
                         new InstantCommand(()-> follower.setMaxPower(1)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
@@ -131,7 +129,7 @@ public class AUTO extends LinearOpMode {
                         new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.7),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
@@ -161,7 +159,7 @@ public class AUTO extends LinearOpMode {
                         new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.7),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
@@ -191,7 +189,7 @@ public class AUTO extends LinearOpMode {
                         new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.7),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
@@ -221,7 +219,7 @@ public class AUTO extends LinearOpMode {
                         new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.7),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
@@ -250,7 +248,7 @@ public class AUTO extends LinearOpMode {
                         new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.7),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose())),
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
@@ -265,7 +263,7 @@ public class AUTO extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
                         new InstantCommand(()-> follower.followPath(park)),
                         new WaitUntilCommand(()-> !follower.isBusy()),
-                        new InstantCommand(()-> follower.holdPoint(follower.poseTracker.getPose()))
+                        new InstantCommand(()-> follower.holdPoint(follower.getPose()))
                 )
 
         );
@@ -287,12 +285,12 @@ public class AUTO extends LinearOpMode {
     public void buildPaths() {
         preload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, preloadPose))
-                .setConstantHeadingInterpolation(Math.toRadians(90))
+                .setConstantHeadingInterpolation(preloadPose.getHeading())
                 .build();
 
         bottomCollect = follower.pathBuilder()
-                .addPath(new BezierCurve(preloadPose, new Pose(23, 21), new Pose(23, 21), bottomCollectPose))
-                .setConstantHeadingInterpolation(Math.toRadians(90))
+                .addPath(new BezierCurve(preloadPose, new Pose(119, 21), new Pose(119, 21), bottomCollectPose))
+                .setConstantHeadingInterpolation(bottomCollectPose.getHeading())
                 .build();
         bottomShoot = follower.pathBuilder()
                 .addPath(new BezierLine(bottomCollectPose, bottomShootPose))

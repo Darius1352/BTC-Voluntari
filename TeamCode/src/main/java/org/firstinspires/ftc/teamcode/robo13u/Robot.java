@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.robo13u;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -16,6 +17,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
@@ -52,7 +54,7 @@ public class Robot {
     public final Lift lift;
 
     private final VoltageSensor voltageSensor;
-    public final PoseTracker poseTracker;
+    public final Follower follower;
 
     private final MultipleTelemetry telemetry;
     private final LinearOpMode linearOpMode;
@@ -62,6 +64,9 @@ public class Robot {
 
     public static double lastVoltageReading = 12.0;
     public HardwareMap hardwareMap = null;
+
+    private final ElapsedTime voltageTimer = new ElapsedTime();
+    private static final double VOLTAGE_TIMEOUT = 0.5;
 
     public Robot (LinearOpMode linearOpMode, Pose startPose) {
 
@@ -84,13 +89,14 @@ public class Robot {
         upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
         downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
 
-        poseTracker = new PoseTracker(new PinpointLocalizer(hardwareMap, Constants.localizerConstants));
+        follower = Constants.createFollower(hardwareMap);
 
         if(startPose != null){
-            poseTracker.setStartingPose(startPose);
+            follower.setStartingPose(startPose);
         }
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        voltageTimer.reset();
 
         rightIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         leftIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -138,12 +144,15 @@ public class Robot {
         controlHub.clearBulkCache();
         expansionHub.clearBulkCache();
 
-        lastVoltageReading = voltageSensor.getVoltage();
+        if (voltageTimer.seconds() > VOLTAGE_TIMEOUT) {
+            lastVoltageReading = voltageSensor.getVoltage();
+            voltageTimer.reset();
+        }
 
-        poseTracker.update();
+        follower.update();
 
         intake.update(lastVoltageReading);
-        outtake.update(lastVoltageReading, poseTracker.getPose(), poseTracker.getVelocity(), poseTracker.getAcceleration(), packet);
+        outtake.update(lastVoltageReading, follower.getPose(), follower.getVelocity(), follower.getAcceleration(), packet);
         /*
         double currentSeconds = System.nanoTime() / 1e9;
         double loopTime = currentSeconds - lastTelemetryLooptimeLog;
@@ -151,9 +160,9 @@ public class Robot {
         packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
         packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
 
-        packet.put("Robot Pose: ", poseTracker.getPose().toString());
-        packet.put("Robot Velocity: ", poseTracker.getVelocity().toString());
-        packet.put("Robot Acceleretion: ", poseTracker.getAcceleration().toString());
+        packet.put("Robot Pose: ", follower.getPose().toString());
+        packet.put("Robot Velocity: ", follower.getVelocity().toString());
+        packet.put("Robot Acceleretion: ", follower.getAcceleration().toString());
 
         packet.put("shooter RPM: ", (outtake.rightShooterMotor.getVelocity()) / 28.0 * 60.0);
         packet.put("shooter TPS: ", outtake.rightShooterMotor.getVelocity());
@@ -161,7 +170,7 @@ public class Robot {
         packet.put("TARGET TPS: ", outtake.getTargetTPS());
         packet.put("TARGET RPM: ", (outtake.getTargetTPS()) / 28.0 * 60.0);
 
-        packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(poseTracker.getPose()));
+        packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(follower.getPose()));
 
         packet.put("IntakeMotorState: ", intake.getIntakeMotorState().toString());
         packet.put("LockState: ", intake.getLockState().toString());
