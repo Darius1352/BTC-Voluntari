@@ -28,7 +28,7 @@ public class TeleOp_TEST extends LinearOpMode {
     private Command runningCommand;
 
     private final Pose resetPose = new Pose(9, 9, Math.toRadians(180));
-    private final Pose basePose = new Pose(38, 33, Math.toRadians(90));
+    private final Pose basePose = new Pose(38, 33, Math.toRadians(225));
     private PathChain base;
 
     @Override
@@ -40,7 +40,7 @@ public class TeleOp_TEST extends LinearOpMode {
         new ParallelCommand(
                 new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                 new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST_IDLE)),
+                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
                 new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                 new InstantCommand(()-> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE)),
@@ -83,7 +83,7 @@ public class TeleOp_TEST extends LinearOpMode {
             }
 
             if(gamepad.wasJustPressed(GamepadEx.Button.right_bumper)) {
-                if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST_IDLE) {
+                if(robot.outtake.getShooterState() == Outtake.ShooterState.INIT) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
@@ -103,7 +103,7 @@ public class TeleOp_TEST extends LinearOpMode {
                 else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.intake.getLockState() == Intake.LockState.TRANSFER) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST_IDLE)),
+                            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
                     );
@@ -149,31 +149,47 @@ public class TeleOp_TEST extends LinearOpMode {
                 runningCommand = new InstantCommand(()->robot.outtake.incrementHoodDown());
             }
 
-            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_right)){
+            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_left)){
                 runningCommand = new InstantCommand(()->robot.outtake.incrementTurretLeft());
             }
 
-            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_left)){
+            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_right)){
                 runningCommand = new InstantCommand(()->robot.outtake.incrementTurretRight());
             }
 
-            if(gamepad.wasJustPressed(GamepadEx.Button.square)){
+            if(gamepad.wasJustPressed(GamepadEx.Button.triangle)){
                 runningCommand = new InstantCommand(()->robot.outtake.incrementShooterSlower());
             }
 
-            if(gamepad.wasJustPressed(GamepadEx.Button.triangle)){
+            if(gamepad.wasJustPressed(GamepadEx.Button.square)){
                 runningCommand = new InstantCommand(()->robot.outtake.incrementShooterFaster());
             }
 
             if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
                 runningCommand = new SequentialCommand(
                         new InstantCommand(()-> robot.follower.setPose(resetPose)),
+                        new SleepCommand(0.05),
+                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
+                        new SleepCommand(0.05),
+                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
+
                         new InstantCommand(()-> robot.outtake.setPadOffset(0)),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),
                         new InstantCommand(()-> robot.mecanumDrive.imu.setYaw(0))
                 );
             }
+
+            if (gamepad.wasJustPressed(GamepadEx.Button.touchpad)) {
+                runningCommand = new SequentialCommand(
+                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
+                        new SleepCommand(0.05),
+                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
+                        new SleepCommand(0.05),
+                        new InstantCommand(()-> robot.follower.setPose(resetPose))
+                );
+            }
+
             if (!robot.follower.isBusy()) {
                 robot.drive(-gamepad.gamepad.left_stick_y,
                         gamepad.gamepad.left_stick_x,
@@ -193,7 +209,6 @@ public class TeleOp_TEST extends LinearOpMode {
         }
 
     }
-
     public void buildBasePath() {
 
        base = robot.follower.pathBuilder()

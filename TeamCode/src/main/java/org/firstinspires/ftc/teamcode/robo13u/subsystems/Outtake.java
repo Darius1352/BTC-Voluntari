@@ -29,8 +29,8 @@ public class Outtake {
     public static double GOAL_Y = 0;
     public static double TURRET_CENTER_POS = 0.5;
     public static double TOTAL_SERVO_RANGE_DEGREES = 0;
-    public static double ROBOT_CENTER_TO_TURRET_DX = 0;
-    public static double ROBOT_CENTER_TO_TURRET_DY = 0;
+    public static double ROBOT_CENTER_TO_TURRET_DX = 2.80646;
+    public static double ROBOT_CENTER_TO_TURRET_DY = 0.520;
     public static double TURRET_PIVOT_TO_BARREL = 0;
     public static double ESTIMATED_ARTIFACT_SPEED_IN_SEC = 0;
     public static double INERTIA_GAIN = 0;
@@ -70,7 +70,7 @@ public class Outtake {
     public enum ShooterState {
         SHOOT(1),
         IDLE(0),
-        TEST_IDLE(0),
+        INIT(0),
         POWER(0),
         TEST(0);
 
@@ -127,7 +127,7 @@ public class Outtake {
 
         setOuttakeState(OuttakeState.UNLOCALIZED);
         setHoodState(HoodState.CLOSE);
-        setShooterState(ShooterState.IDLE);
+        setShooterState(ShooterState.INIT);
         setTurretState(TurretState.FRONT);
 
         this.shooterPIDF = new PIDFController(sP, sI, sD, 0);
@@ -251,6 +251,16 @@ public class Outtake {
         return degrees;
     }
 
+    private double wrapAround(double target_angle) {
+        while (target_angle < min_turret_angle && (target_angle + 360.0) <= max_turret_angle) {
+            target_angle += 360.0;
+        }
+        while (target_angle > max_turret_angle && (target_angle - 360.0) >= min_turret_angle) {
+            target_angle -= 360.0;
+        }
+        return target_angle;
+    }
+
     public void incrementShooterSlower(){
         shooter_multiplier -= 0.02;
     }
@@ -317,9 +327,7 @@ public class Outtake {
     }
 
     public void update (double voltage, Pose robotPose, Vector robotVelocity, Vector robotAcceleration, TelemetryPacket packet) {
-
         double robotHeadingRadians = robotPose.getHeading();
-        double robotHeadingDegrees = Math.toDegrees(robotHeadingRadians);
 
         double turretX = robotPose.getX()
                 + (ROBOT_CENTER_TO_TURRET_DX * Math.cos(robotHeadingRadians))
@@ -362,17 +370,10 @@ public class Outtake {
 
         double target_angle = 0;
         if(getTurretState() == TurretState.AUTO){
-            double targetFieldDegrees = Math.toDegrees(Math.atan2(targetDiffY, targetDiffX));
-            target_angle = normalizeAngle(targetFieldDegrees - robotHeadingDegrees + pad_offset);
+            double rawTargetRad = Math.atan2(targetDiffY, targetDiffX) - robotHeadingRadians;
+            target_angle = normalizeAngle(Math.toDegrees(rawTargetRad) + pad_offset);
 
-            if (target_angle < min_turret_angle && (target_angle + 360.0) <= max_turret_angle) {
-                target_angle += 360.0;
-            }
-            else if (target_angle > max_turret_angle && (target_angle - 360.0) >= min_turret_angle) {
-                target_angle -= 360.0;
-            }
-
-            target_angle = Math.max(min_turret_angle, Math.min(target_angle, max_turret_angle));
+            target_angle = Math.max(min_turret_angle, Math.min(wrapAround(target_angle), max_turret_angle));
         }
         else if (getTurretState() == TurretState.FRONT) {
             target_angle = Math.max(min_turret_angle, Math.min(test_target, max_turret_angle));
@@ -399,81 +400,32 @@ public class Outtake {
             double TPSCorrection = effectiveVelocity / correctionFactor;
 
             targetTPS = baseTPS - TPSCorrection;
-
-            shooterPIDF.setPIDF(sP, 0, 0, 0);
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
-
-            double currentTPS = leftShooterMotor.getVelocity();
-
-            double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
-            double ffOutput = feedforward.calculate(targetTPS)*(12.0 / voltage);
-
-            double finalPower = pidCorrection + ffOutput;
-
-            if (finalPower > 1.0) finalPower = 1.0;
-            if (finalPower < 0.0) finalPower = 0.0;
-
-            leftShooterMotor.setPower(finalPower);
-            rightShooterMotor.setPower(finalPower);
         }
         else if(getShooterState() == ShooterState.TEST){
-            shooterPIDF.setPIDF(sP, sI, sD, 0);
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
-
-            targetTPS = test_TPS;
-
-            double currentTPS = leftShooterMotor.getVelocity();
-
-            double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
-            double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
-
-            double finalPower = pidCorrection + ffOutput;
-
-            if (finalPower > 1.0) finalPower = 1.0;
-            if (finalPower < 0.0) finalPower = 0.0;
-
-            leftShooterMotor.setPower(finalPower);
-            rightShooterMotor.setPower(finalPower);
+            targetTPS = calculateTestTargetTPS();
         }
         else if(getShooterState() == ShooterState.IDLE){
-            shooterPIDF.setPIDF(sP, sI, sD, 0);
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
-
-            targetTPS = 1500;
-
-            double currentTPS = leftShooterMotor.getVelocity();
-
-            double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
-            double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
-
-            double finalPower = pidCorrection + ffOutput;
-
-            if (finalPower > 1.0) finalPower = 1.0;
-            if (finalPower < 0.0) finalPower = 0.0;
-
-            leftShooterMotor.setPower(finalPower);
-            rightShooterMotor.setPower(finalPower);
+            targetTPS = 1750;
         }
-        else if(getShooterState() == ShooterState.TEST_IDLE){
-            shooterPIDF.setPIDF(sP, sI, sD, 0);
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
-
+        else if(getShooterState() == ShooterState.INIT){
             targetTPS = 0;
+        }
 
-            double currentTPS = leftShooterMotor.getVelocity();
+        if (getShooterState() != ShooterState.POWER) {
+            shooterPIDF.setPIDF(sP, sI, sD, 0); //Poti sterge asta dupa tuning
+            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);//si asta
+
+            double currentTPS = rightShooterMotor.getVelocity();
 
             double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
             double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
 
-            double finalPower = pidCorrection + ffOutput;
-
-            if (finalPower > 1.0) finalPower = 1.0;
-            if (finalPower < 0.0) finalPower = 0.0;
+            double finalPower = Math.max(0.0, Math.min(1.0, pidCorrection + ffOutput));
 
             leftShooterMotor.setPower(finalPower);
             rightShooterMotor.setPower(finalPower);
         }
-        else if(getShooterState() == ShooterState.POWER){
+        else {
             leftShooterMotor.setPower(power);
             rightShooterMotor.setPower(power);
         }
