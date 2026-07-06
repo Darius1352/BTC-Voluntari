@@ -25,14 +25,14 @@ public class Outtake {
     public static double pad_offset = 0;
     public static double min_turret_angle = -160, max_turret_angle = 160;
     public static double test_target = 0;
+    public static double base_target = 0;
     public static double GOAL_X = 144.0;
     public static double GOAL_Y = 0;
     public static double TURRET_CENTER_POS = 0.5;
-    public static double TOTAL_SERVO_RANGE_DEGREES = 0;
+    public static double TOTAL_SERVO_RANGE_DEGREES = 318.57;
     public static double ROBOT_CENTER_TO_TURRET_DX = 2.80646;
-    public static double ROBOT_CENTER_TO_TURRET_DY = 0.520;
+    public static double ROBOT_CENTER_TO_TURRET_DY = 0;
     public static double TURRET_PIVOT_TO_BARREL = 0;
-    public static double ESTIMATED_ARTIFACT_SPEED_IN_SEC = 0;
     public static double INERTIA_GAIN = 0;
     public static double ACCEL_FEEDFORWARD_GAIN = 0.05;
 
@@ -42,8 +42,8 @@ public class Outtake {
     public static double TPS_TO_INCHES_BACKWARD = 0;
     public static double TPS_TO_INCHES_FORWARD = 0;
     public static double SHOOTER_ACCEL_GAIN = 0;
-    public static double skStatic = 0, skVelocity = 0, skAcceleration = 0;
-    public static double sP = 0, sI = 0, sD = 0;
+    public static double skStatic = 0, skVelocity = 0;
+    public static double sP = 0, sD = 0;
     public static double test_TPS = 2000;
     public static double shooter_multiplier = 1;
     public static double targetTPS = 0;
@@ -104,7 +104,8 @@ public class Outtake {
 
     public enum TurretState {
         AUTO(0),
-        FRONT(0);
+        FRONT(0),
+        BASE(0);
 
         double targetAngle;
 
@@ -130,8 +131,8 @@ public class Outtake {
         setShooterState(ShooterState.INIT);
         setTurretState(TurretState.FRONT);
 
-        this.shooterPIDF = new PIDFController(sP, sI, sD, 0);
-        this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
+        this.shooterPIDF = new PIDFController(sP, 0, sD, 0);
+        this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, 0);
 
         this.leftShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         this.leftShooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -144,8 +145,7 @@ public class Outtake {
     public void setHoodState (HoodState newState) {
         hoodState = newState;
         if(hoodState != HoodState.AUTO && hoodState != HoodState.TEST) {
-            double targetPos = hoodState.getPosition();
-            hoodServo.setPosition(targetPos);
+            hoodServo.setPosition(hoodState.getPosition());
         }
     }
 
@@ -231,14 +231,7 @@ public class Outtake {
     }
 
     public double angleToServoPos(double angleDegrees) {
-        double positionChange = angleDegrees / TOTAL_SERVO_RANGE_DEGREES;
-
-        double targetPos = TURRET_CENTER_POS + positionChange;
-
-        if (targetPos > 1.0) targetPos = 1.0;
-        if (targetPos < 0.0) targetPos = 0.0;
-
-        return targetPos;
+        return Math.max(0.0, Math.min(1.0, TURRET_CENTER_POS + (angleDegrees / TOTAL_SERVO_RANGE_DEGREES)));
     }
 
     private double normalizeAngle(double degrees){
@@ -250,13 +243,20 @@ public class Outtake {
         }
         return degrees;
     }
-
     private double wrapAround(double target_angle) {
-        while (target_angle < min_turret_angle && (target_angle + 360.0) <= max_turret_angle) {
-            target_angle += 360.0;
+        while (target_angle < min_turret_angle) {
+            if (target_angle + 360.0 <= max_turret_angle) {
+                target_angle += 360.0;
+            } else {
+                break;
+            }
         }
-        while (target_angle > max_turret_angle && (target_angle - 360.0) >= min_turret_angle) {
-            target_angle -= 360.0;
+        while (target_angle > max_turret_angle) {
+            if (target_angle - 360.0 >= min_turret_angle) {
+                target_angle -= 360.0;
+            } else {
+                break;
+            }
         }
         return target_angle;
     }
@@ -303,10 +303,6 @@ public class Outtake {
 
     public void setInertiaGain(double value){
         INERTIA_GAIN = value;
-    }
-
-    public void setEstimatedArtifactSpeedInSec(double value){
-        ESTIMATED_ARTIFACT_SPEED_IN_SEC = value;
     }
 
     public double getTargetTPS(){
@@ -375,8 +371,11 @@ public class Outtake {
 
             target_angle = Math.max(min_turret_angle, Math.min(wrapAround(target_angle), max_turret_angle));
         }
-        else if (getTurretState() == TurretState.FRONT) {
+        else if(getTurretState() == TurretState.FRONT) {
             target_angle = Math.max(min_turret_angle, Math.min(test_target, max_turret_angle));
+        }
+        else if(getTurretState() == TurretState.BASE) {
+            target_angle = Math.max(min_turret_angle, Math.min(base_target, max_turret_angle));
         }
 
         if(getShooterState() == ShooterState.SHOOT){
@@ -412,10 +411,10 @@ public class Outtake {
         }
 
         if (getShooterState() != ShooterState.POWER) {
-            shooterPIDF.setPIDF(sP, sI, sD, 0); //Poti sterge asta dupa tuning
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);//si asta
+            shooterPIDF.setPIDF(sP, 0, sD, 0); //Poti sterge asta dupa tuning
+            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, 0);//si asta
 
-            double currentTPS = rightShooterMotor.getVelocity();
+            double currentTPS = Math.abs(rightShooterMotor.getVelocity());
 
             double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
             double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);

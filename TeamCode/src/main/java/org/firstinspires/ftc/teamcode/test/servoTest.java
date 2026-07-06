@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.utils.GamepadEx;
 
-@TeleOp(name = "Positional_Servo_Test")
+@TeleOp(name = "Positional_Servo_Test", group = "Test")
 public class servoTest extends LinearOpMode {
 
     Servo lockServo;
@@ -29,7 +29,7 @@ public class servoTest extends LinearOpMode {
         gamepad = new GamepadEx(gamepad1);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        Servo controlledServo = lockServo;
+        String controlledServo = "lockServo";
 
         timer = new ElapsedTime();
 
@@ -61,15 +61,16 @@ public class servoTest extends LinearOpMode {
 
             if(gamepad.wasJustPressed(GamepadEx.Button.cross) && servoNumber == 1) {
                 servoNumber = 2;
-                controlledServo = hoodServo;
+                controlledServo = "hoodServo";
             }
             else if(gamepad.wasJustPressed(GamepadEx.Button.cross) && servoNumber == 2) {
                 servoNumber = 1;
-                controlledServo = lockServo;
+                controlledServo = "lockServo";
             }
 
             telemetry.addData("ControlledServo: ", controlledServo);
-            telemetry.addData("ServoPose: ", controlledServo.getPosition());
+            telemetry.addData("lockServoPose: ", lockServo.getPosition());
+            telemetry.addData("hoodServoPose: ", hoodServo.getPosition());
             telemetry.update();
 
         }

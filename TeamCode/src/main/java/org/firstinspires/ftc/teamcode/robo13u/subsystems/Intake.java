@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.utils.Motor;
+
 @Config
 public class Intake {
 
@@ -17,17 +19,16 @@ public class Intake {
     public static LockState lockState;
 
     public enum IntakeState{
-        INTAKE(),
-        TRANSFER(),
-        TRANSFER_SLOW(),
+        INTAKE,
+        TRANSFER,
+        TRANSFER_SLOW,
         REVERSE,
-        IDLE
+        IDLE;
     }
 
     public enum IntakeMotorState{
         INTAKING(1),
         INTAKING_SLOW(0.4),
-        INTAKING_FAR(1),
         LOCKING(0.2),
         LOCKED(0),
         REVERSE(-1);
@@ -59,8 +60,8 @@ public class Intake {
     }
 
     public Intake(DcMotorEx rightIntakeMotor, DcMotorEx leftIntakeMotor, Servo lockServo){
-        this.rightIntakeMotor = rightIntakeMotor;
-        this.leftIntakeMotor = leftIntakeMotor;
+        this.rightIntakeMotor = new Motor(rightIntakeMotor);
+        this.leftIntakeMotor = new Motor(leftIntakeMotor);
         this.lockServo = lockServo;
 
         setLockState(LockState.LOCKED);
@@ -95,12 +96,9 @@ public class Intake {
     }
 
     public void update(double voltage){
-        double targetLockPos = lockState.getPosition();
-        lockServo.setPosition(targetLockPos);
-
-        double targetPower = intakeMotorState.getPower() * (12.0 / voltage);
-        rightIntakeMotor.setPower(targetPower);
-        leftIntakeMotor.setPower(targetPower);
+        lockServo.setPosition(lockState.getPosition());
+        rightIntakeMotor.setPower(intakeMotorState.getPower() * (12.0 / voltage));
+        leftIntakeMotor.setPower(intakeMotorState.getPower() * (12.0 / voltage));
     }
 
 }

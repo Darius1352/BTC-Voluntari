@@ -27,7 +27,7 @@ public class TeleOp_BLUE extends LinearOpMode {
     private GamepadEx gamepad;
     private Command runningCommand;
     private final Pose resetPose = new Pose(9, 9, Math.toRadians(180));
-    private final Pose basePose = new Pose(38, 33, Math.toRadians(225));
+    private final Pose basePose = new Pose(38, 33, Math.toRadians(90)); //225 - heading
     private PathChain base;
 
     @Override
@@ -175,10 +175,10 @@ public class TeleOp_BLUE extends LinearOpMode {
             if (!robot.follower.isBusy()) {
                 robot.drive(-gamepad.gamepad.left_stick_y,
                         gamepad.gamepad.left_stick_x,
-                        (gamepad.gamepad.left_trigger - gamepad.gamepad.right_trigger));   //Posibil sa faca robotul mai incet
+                        (gamepad.gamepad.left_trigger - gamepad.gamepad.right_trigger));
             }
             else {
-                robot.drive(0, 0, 0);
+                robot.drive(0, 0, 0); //Posibil sa faca robotul mai incet
             }
 
 
@@ -193,7 +193,6 @@ public class TeleOp_BLUE extends LinearOpMode {
 
     }
     public void buildBasePath() {
-
         base = robot.follower.pathBuilder()
                 .addPath(new BezierLine(resetPose, basePose))
                 .setLinearHeadingInterpolation(resetPose.getHeading(), basePose.getHeading(), 0.75)

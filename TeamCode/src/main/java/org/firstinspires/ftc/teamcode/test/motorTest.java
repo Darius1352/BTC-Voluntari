@@ -18,8 +18,8 @@ public class motorTest extends LinearOpMode {
         DcMotorEx rf = hardwareMap.get(DcMotorEx.class, "rightFront");
         DcMotorEx rr = hardwareMap.get(DcMotorEx.class, "rightRear");
 
-        DcMotorEx i1 = hardwareMap.get(DcMotorEx.class, "spinnerMotor");
-        DcMotorEx i2 = hardwareMap.get(DcMotorEx.class, "transferMotor");
+        DcMotorEx i1 = hardwareMap.get(DcMotorEx.class, "leftIntakeMotor");
+        DcMotorEx i2 = hardwareMap.get(DcMotorEx.class, "rightIntakeMotor");
         DcMotorEx s1 = hardwareMap.get(DcMotorEx.class, "leftShooterMotor");
         DcMotorEx s2 = hardwareMap.get(DcMotorEx.class, "rightShooterMotor");
 
@@ -75,14 +75,14 @@ public class motorTest extends LinearOpMode {
             else {
                 if (gamepad1.cross) {
                     i1.setPower(0.5);
-                    telemetry.addData("Running Motor: ", "Spinner");
+                    telemetry.addData("Running Motor: ", "leftIntake");
                 } else {
                     i1.setPower(0);
                 }
 
                 if (gamepad1.square) {
                     i2.setPower(0.5);
-                    telemetry.addData("Running Motor: ", "Transfer");
+                    telemetry.addData("Running Motor: ", "rightIntake");
                 } else {
                     i2.setPower(0);
                 }

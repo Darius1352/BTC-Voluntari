@@ -51,12 +51,12 @@ public class TeleOp_TEST extends LinearOpMode {
                 new InstantCommand(()-> robot.outtake.setGoalXY(0,144))
         ).run(new TelemetryPacket());
 
-        buildBasePath();
+        //buildBasePath();
 
         waitForStart();
 
         while(!isStopRequested() && opModeIsActive()) {
-
+            /*
             if(gamepad.wasJustPressed(GamepadEx.Button.cross)){
                 if(robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.INTAKING) {
                     runningCommand = new SequentialCommand(
@@ -116,9 +116,6 @@ public class TeleOp_TEST extends LinearOpMode {
                         new SleepCommand(0.05),
 
                         new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
                         new InstantCommand(()-> robot.follower.setPose(resetPose)),
                         new SleepCommand(0.05),
 
@@ -128,7 +125,7 @@ public class TeleOp_TEST extends LinearOpMode {
                         new SleepCommand(0.05),
 
                         new InstantCommand(()-> robot.lift.setLiftState(Lift.LiftState.UP)),
-                        new SleepCommand(1),
+                        new SleepCommand(0.5),
                         new InstantCommand(()-> robot.lift.setLiftState(Lift.LiftState.IDLE))
                 );
             }
@@ -164,40 +161,40 @@ public class TeleOp_TEST extends LinearOpMode {
             if(gamepad.wasJustPressed(GamepadEx.Button.square)){
                 runningCommand = new InstantCommand(()->robot.outtake.incrementShooterFaster());
             }
-
+            */
             if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
-                runningCommand = new SequentialCommand(
-                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.follower.setPose(resetPose)),
+                robot.mecanumDrive.imu.resetYaw();
+                /*runningCommand = new SequentialCommand(
 
                         new InstantCommand(()-> robot.outtake.setPadOffset(0)),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
-                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),
-                        new InstantCommand(()-> robot.mecanumDrive.imu.setYaw(0))
-                );
-            }
+                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(1))
 
-            if (gamepad.wasJustPressed(GamepadEx.Button.touchpad)) {
+                );
+                 */
+            }
+            /*
+            if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
                 runningCommand = new SequentialCommand(
+                        new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
+
+                        new InstantCommand(()-> robot.mecanumDrive.imu.setYaw(0)),
+
                         new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
                         new InstantCommand(()-> robot.follower.setPose(resetPose)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.follower.setPose(resetPose))
+
+                        new InstantCommand(()-> robot.outtake.setPadOffset(0)),
+                        new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
+                        new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
+                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(1))
                 );
             }
+            */
 
-            if (!robot.follower.isBusy()) {
-                robot.drive(-gamepad.gamepad.left_stick_y,
-                        gamepad.gamepad.left_stick_x,
-                        (gamepad.gamepad.left_trigger - gamepad.gamepad.right_trigger));
-            }
-            else {
-                robot.drive(0, 0, 0);
-            }
+            robot.drive(-gamepad.gamepad.left_stick_y,
+                    gamepad.gamepad.left_stick_x,
+                    (gamepad.gamepad.left_trigger - gamepad.gamepad.right_trigger));
+
 
             if (runningCommand != null) {
                 if (runningCommand.run(new TelemetryPacket())) {
@@ -210,7 +207,6 @@ public class TeleOp_TEST extends LinearOpMode {
 
     }
     public void buildBasePath() {
-
        base = robot.follower.pathBuilder()
                .addPath(new BezierLine(resetPose, basePose))
                .setLinearHeadingInterpolation(resetPose.getHeading(), basePose.getHeading(), 0.75)

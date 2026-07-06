@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.robo13u.Robot;
 import org.firstinspires.ftc.teamcode.utils.Imu;
+import org.firstinspires.ftc.teamcode.utils.Motor;
 
 public class MecanumDrive {
     public static double K_STATIC = 0.15;
@@ -25,15 +26,15 @@ public class MecanumDrive {
 
         HardwareMap hardwareMap = linearOpMode.hardwareMap;
 
-        this.leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        this.leftRear = hardwareMap.get(DcMotorEx.class, "leftRear");
-        this.rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
-        this.rightRear = hardwareMap.get(DcMotorEx.class, "rightRear");
+        this.leftFront = new Motor(hardwareMap.get(DcMotorEx.class, "leftFront"));
+        this.leftRear = new Motor(hardwareMap.get(DcMotorEx.class, "leftRear"));
+        this.rightFront = new Motor(hardwareMap.get(DcMotorEx.class, "rightFront"));
+        this.rightRear = new Motor(hardwareMap.get(DcMotorEx.class, "rightRear"));
 
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftRear.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -58,16 +59,12 @@ public class MecanumDrive {
     {
         strafe = strafe * 1.1;
 
-        double denominator = Math.max(abs(forward)+abs(strafe)+abs(rotate),1);
+        double denominator = Math.max(abs(forward) + abs(strafe) + abs(rotate) , 1);
 
-        forward = forward / denominator;
-        strafe = strafe / denominator;
-        rotate = rotate / denominator;
-
-        double leftFrontPower = - forward - strafe + rotate;
-        double rightFrontPower = - forward + strafe - rotate;
-        double leftRearPower = - forward + strafe + rotate;
-        double rightRearPower = - forward - strafe - rotate;
+        double leftFrontPower = (forward + strafe - rotate) / denominator;
+        double leftRearPower = (forward - strafe - rotate) / denominator;
+        double rightFrontPower = (forward - strafe + rotate) / denominator;
+        double rightRearPower = (forward + strafe + rotate) / denominator;
 
         leftFront.setPower(leftFrontPower);
         leftRear.setPower(leftRearPower);

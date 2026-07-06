@@ -4,41 +4,39 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 public class GamepadEx {
     public Gamepad gamepad;
-
     public enum Button {
-        touchpad_finger_1   (0x40000), // Bit 18
-        touchpad_finger_2   (0x20000), // Bit 17
-        touchpad            (0x10000), // Bit 16
-        left_stick_button   (0x08000), // Bit 15
-        right_stick_button  (0x04000), // Bit 14
-        dpad_up             (0x02000), // Bit 13
-        dpad_down           (0x01000), // Bit 12
-        dpad_left           (0x00800), // Bit 11
-        dpad_right          (0x00400), // Bit 10
-        a                   (0x00200), // Bit 9
-        cross               (0x00200), // Aliased
-        b                   (0x00100), // Bit 8
-        circle              (0x00100), // Aliased
-        x                   (0x00080), // Bit 7
-        square              (0x00080), // Aliased
-        y                   (0x00040), // Bit 6
-        triangle            (0x00040), // Aliased
-        guide               (0x00020), // Bit 5
-        ps                  (0x00020), // Aliased
-        start               (0x00010), // Bit 4
-        options             (0x00010), // Aliased
-        back                (0x00008), // Bit 3
-        share               (0x00008), // Aliased
-        left_bumper         (0x00002), // Bit 1
-        right_bumper        (0x00001); // Bit 0
+        touchpad_finger_1   (0x20000),
+        touchpad_finger_2   (0x10000),
+        touchpad            (0x08000),
+        left_stick_button   (0x04000),
+        right_stick_button  (0x02000),
+        dpad_up             (0x01000),
+        dpad_down           (0x00800),
+        dpad_left           (0x00400),
+        dpad_right          (0x00200),
+        a                   (0x00100),
+        cross               (0x00100),
+        b                   (0x00080),
+        circle              (0x00080),
+        x                   (0x00040),
+        square              (0x00040),
+        y                   (0x00020),
+        triangle            (0x00020),
+        guide               (0x00010),
+        ps                  (0x00010),
+        start               (0x00008),
+        options             (0x00008),
+        back                (0x00004),
+        share               (0x00004),
+        left_bumper         (0x00002),
+        right_bumper        (0x00001);
 
-        public final int integer;
+        public int integer;
 
         Button(int integer){
             this.integer = integer;
         }
     }
-
     public int currentPressed;
     private int lastPressed;
 
@@ -46,14 +44,20 @@ public class GamepadEx {
         this.gamepad = gamepad;
     }
 
-    public boolean isHeld(Button button){
+    public boolean wasJustPressed(Button button){
+        return ( ~lastPressed & currentPressed & button.integer) != 0;
+    }
+
+    /**
+     * Returns true as long as the button is currently being held down.
+     */
+    public boolean isPressed(Button button) {
         return (currentPressed & button.integer) != 0;
     }
 
-    public boolean wasJustPressed(Button button){
-        return (~lastPressed & currentPressed & button.integer) != 0;
-    }
-
+    /**
+     * Returns true ONLY on the exact loop the button is released.
+     */
     public boolean wasJustReleased(Button button) {
         return (lastPressed & ~currentPressed & button.integer) != 0;
     }
@@ -61,7 +65,6 @@ public class GamepadEx {
     public void update(){
         lastPressed = currentPressed;
         currentPressed = 0;
-
         currentPressed = (currentPressed << 1) + (gamepad.touchpad_finger_1 ? 1 : 0);
         currentPressed = (currentPressed << 1) + (gamepad.touchpad_finger_2 ? 1 : 0);
         currentPressed = (currentPressed << 1) + (gamepad.touchpad ? 1 : 0);

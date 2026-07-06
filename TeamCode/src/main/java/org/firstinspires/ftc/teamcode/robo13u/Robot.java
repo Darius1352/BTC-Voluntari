@@ -62,6 +62,8 @@ public class Robot {
     private final LynxModule controlHub;
     private final LynxModule expansionHub;
 
+    private double lastTelemetryLooptimeLog;
+
     public static double lastVoltageReading = 12.0;
     public HardwareMap hardwareMap = null;
 
@@ -149,17 +151,16 @@ public class Robot {
             voltageTimer.reset();
         }
 
-        follower.update();
-
         intake.update(lastVoltageReading);
+        follower.update();
         outtake.update(lastVoltageReading, follower.getPose(), follower.getVelocity(), follower.getAcceleration(), packet);
-        /*
+
         double currentSeconds = System.nanoTime() / 1e9;
         double loopTime = currentSeconds - lastTelemetryLooptimeLog;
 
         packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
         packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
-
+        /*
         packet.put("Robot Pose: ", follower.getPose().toString());
         packet.put("Robot Velocity: ", follower.getVelocity().toString());
         packet.put("Robot Acceleretion: ", follower.getAcceleration().toString());
@@ -181,16 +182,16 @@ public class Robot {
 
         packet.put("IntakeState: ", intake.getIntakeState().toString());
         packet.put("OuttakeState: ", outtake.getOuttakeState().toString());
-
+        */
         lastTelemetryLooptimeLog = currentSeconds;
 
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
-        */
+
     }
 
     public void drive(double forward, double strafe, double rotate)
     {
-        mecanumDrive.driveRobotCentric(forward, strafe, rotate);
+        mecanumDrive.driveFieldCentric(forward, strafe, rotate);
     }
 
 }
