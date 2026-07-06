@@ -3,9 +3,9 @@ package org.firstinspires.ftc.teamcode.robo13u;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.localization.Localizer;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -54,7 +54,8 @@ public class Robot {
     public final Lift lift;
 
     private final VoltageSensor voltageSensor;
-    public final Follower follower;
+    public final PoseTracker poseTracker;
+    public final Localizer pinpoint;
 
     private final MultipleTelemetry telemetry;
     private final LinearOpMode linearOpMode;
@@ -91,10 +92,12 @@ public class Robot {
         upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
         downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
 
-        follower = Constants.createFollower(hardwareMap);
+        pinpoint = new PinpointLocalizer(hardwareMap, Constants.localizerConstants);
+
+        poseTracker = new PoseTracker(pinpoint);
 
         if(startPose != null){
-            follower.setStartingPose(startPose);
+            poseTracker.setStartingPose(startPose);
         }
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
@@ -152,8 +155,8 @@ public class Robot {
         }
 
         intake.update(lastVoltageReading);
-        follower.update();
-        outtake.update(lastVoltageReading, follower.getPose(), follower.getVelocity(), follower.getAcceleration(), packet);
+        poseTracker.update();
+        outtake.update(lastVoltageReading, poseTracker.getPose(), poseTracker.getVelocity(), poseTracker.getAcceleration(), packet);
 
         double currentSeconds = System.nanoTime() / 1e9;
         double loopTime = currentSeconds - lastTelemetryLooptimeLog;
@@ -161,9 +164,9 @@ public class Robot {
         packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
         packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
         /*
-        packet.put("Robot Pose: ", follower.getPose().toString());
-        packet.put("Robot Velocity: ", follower.getVelocity().toString());
-        packet.put("Robot Acceleretion: ", follower.getAcceleration().toString());
+        packet.put("Robot Pose: ", poseTracker.getPose().toString());
+        packet.put("Robot Velocity: ", poseTracker.getVelocity().toString());
+        packet.put("Robot Acceleretion: ", poseTracker.getAcceleration().toString());
 
         packet.put("shooter RPM: ", (outtake.rightShooterMotor.getVelocity()) / 28.0 * 60.0);
         packet.put("shooter TPS: ", outtake.rightShooterMotor.getVelocity());
@@ -171,7 +174,7 @@ public class Robot {
         packet.put("TARGET TPS: ", outtake.getTargetTPS());
         packet.put("TARGET RPM: ", (outtake.getTargetTPS()) / 28.0 * 60.0);
 
-        packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(follower.getPose()));
+        packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(poseTracker.getPose()));
 
         packet.put("IntakeMotorState: ", intake.getIntakeMotorState().toString());
         packet.put("LockState: ", intake.getLockState().toString());

@@ -17,7 +17,7 @@ public class Imu
     public Imu(LinearOpMode linearOpMode)
     {
         HardwareMap hardwareMap=linearOpMode.hardwareMap;
-        imu= hardwareMap.get(IMU.class, "imu");
+        imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.RIGHT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
         imu.initialize(parameters);
     }

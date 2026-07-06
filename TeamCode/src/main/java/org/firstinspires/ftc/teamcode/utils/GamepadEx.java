@@ -48,16 +48,10 @@ public class GamepadEx {
         return ( ~lastPressed & currentPressed & button.integer) != 0;
     }
 
-    /**
-     * Returns true as long as the button is currently being held down.
-     */
-    public boolean isPressed(Button button) {
+    public boolean isHeld(Button button) {
         return (currentPressed & button.integer) != 0;
     }
 
-    /**
-     * Returns true ONLY on the exact loop the button is released.
-     */
     public boolean wasJustReleased(Button button) {
         return (lastPressed & ~currentPressed & button.integer) != 0;
     }

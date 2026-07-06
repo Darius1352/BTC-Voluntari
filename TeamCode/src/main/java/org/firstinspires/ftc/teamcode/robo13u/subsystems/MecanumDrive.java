@@ -42,7 +42,7 @@ public class MecanumDrive {
         rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         this.robot = robot;
-        this.imu = new Imu(linearOpMode);
+        imu = new Imu(linearOpMode);
     }
     public void driveFieldCentric(double forward, double strafe, double rotate)
     {

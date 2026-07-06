@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.commandbase.InstantCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SequentialCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SleepCommand;
 import org.firstinspires.ftc.teamcode.commandbase.WaitUntilCommand;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 
@@ -46,7 +47,7 @@ public class AUTO_RED extends LinearOpMode {
 
         robot = new Robot(this, startPose);
         robot.mecanumDrive.imu.resetYaw();
-        follower = robot.follower;
+        follower = Constants.createFollower(hardwareMap);
 
         pathTimer = new ElapsedTime();
 
