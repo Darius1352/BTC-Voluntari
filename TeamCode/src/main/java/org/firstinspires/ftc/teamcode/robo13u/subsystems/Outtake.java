@@ -10,6 +10,9 @@ import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.utils.Motor;
 
 @Config
 public class Outtake {
@@ -30,27 +33,29 @@ public class Outtake {
     public static double GOAL_Y = 0;
     public static double TURRET_CENTER_POS = 0.5;
     public static double TOTAL_SERVO_RANGE_DEGREES = 318.57;
-    public static double ROBOT_CENTER_TO_TURRET_DX = 2.80646;
+    public static double ROBOT_CENTER_TO_TURRET_DX = 2.657;
     public static double ROBOT_CENTER_TO_TURRET_DY = 0;
-    public static double TURRET_PIVOT_TO_BARREL = 0;
-    public static double INERTIA_GAIN = 0;
-    public static double ACCEL_FEEDFORWARD_GAIN = 0.05;
+    public static double TURRET_PIVOT_TO_BARREL = 1;
+    public static double TPS_TO_INCHES_PER_SEC = 0.2;
+    public static double INERTIA_GAIN = 1.67;
+    public static double ACCEL_FEEDFORWARD_GAIN = 0.005;
+    public static double TURRET_TOLERANCE = 0.005;
+    private static double lastPos = -1;
 
-    public PIDFController shooterPIDF;
-    public SimpleMotorFeedforward feedforward;
-    public static double TPS_TO_INCHES_PER_SEC = 0;
-    public static double TPS_TO_INCHES_BACKWARD = 0;
-    public static double TPS_TO_INCHES_FORWARD = 0;
-    public static double SHOOTER_ACCEL_GAIN = 0;
-    public static double skStatic = 0, skVelocity = 0;
-    public static double sP = 0, sD = 0;
-    public static double test_TPS = 2000;
+    private final PIDFController shooterPIDF;
+    private SimpleMotorFeedforward feedforward;
+    public static double TPS_TO_INCHES_BACKWARD = 0.67;
+    public static double TPS_TO_INCHES_FORWARD = 0.9;
+    public static double SHOOTER_ACCEL_GAIN = 0.3;
+    public static double skStatic = 0.125, skVelocity = 0.00043, skAcceleration = 0.01;
+    public static double sP = 0.01;
+    public static double test_TPS = 1000;
     public static double shooter_multiplier = 1;
     public static double targetTPS = 0;
     public static double power = 0;
 
-    public static double min_hood_position = 0, max_hood_position = 0;
-    public static double test_hood_pose = 0.5;
+    public static double min_hood_position = 0.78, max_hood_position = 0;
+    public static double test_hood_pose = 0.35;
     public static double hood_multiplier = 1;
 
     public static OuttakeState outtakeState;
@@ -69,8 +74,8 @@ public class Outtake {
 
     public enum ShooterState {
         SHOOT(1),
-        IDLE(0),
         INIT(0),
+        IDLE(0),
         POWER(0),
         TEST(0);
 
@@ -88,8 +93,8 @@ public class Outtake {
     public enum HoodState {
         AUTO(0),
         TEST(0),
-        FAR(0.67),
-        CLOSE(0.36);
+        FAR(0.36),
+        CLOSE(0.67);
 
         double position;
 
@@ -127,12 +132,12 @@ public class Outtake {
         this.rightTurretServo = rightTurretServo;
 
         setOuttakeState(OuttakeState.UNLOCALIZED);
-        setHoodState(HoodState.CLOSE);
-        setShooterState(ShooterState.INIT);
+        setHoodState(HoodState.FAR);
+        setShooterState(ShooterState.IDLE);
         setTurretState(TurretState.FRONT);
 
-        this.shooterPIDF = new PIDFController(sP, 0, sD, 0);
-        this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, 0);
+        this.shooterPIDF = new PIDFController(sP, 0, 0, 0);
+        this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 
         this.leftShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         this.leftShooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -197,20 +202,11 @@ public class Outtake {
     }
 
     private double calculateTargetTPS(double distance) {
-        return shooter_multiplier * 6.7;
+        return shooter_multiplier * (1550.81955 * Math.sin((0.0036241 * distance) - 1.27522) + 2062.50502);
     }
 
     private double calculateTargetHood(double distance) {
-        double hood_pos = hood_multiplier * 6.7;
-
-        if (hood_pos < min_hood_position) {
-            hood_pos = min_hood_position;
-        }
-        else if (hood_pos > max_hood_position) {
-            hood_pos = max_hood_position;
-        }
-
-        return hood_pos;
+        return Math.max(max_hood_position, Math.min(hood_multiplier * (0.887863 * Math.pow(0.986499, distance)), min_hood_position));
     }
 
     private double calculateTestTargetTPS() {
@@ -218,16 +214,7 @@ public class Outtake {
     }
 
     private double calculateTestTargetHood() {
-        double hood_pos = (hood_multiplier * test_hood_pose);
-
-        if (hood_pos < min_hood_position) {
-            hood_pos = min_hood_position;
-        }
-        else if (hood_pos > max_hood_position) {
-            hood_pos = max_hood_position;
-        }
-
-        return hood_pos;
+        return Math.max(max_hood_position, Math.min(test_hood_pose * hood_multiplier, min_hood_position));
     }
 
     public double angleToServoPos(double angleDegrees) {
@@ -235,63 +222,73 @@ public class Outtake {
     }
 
     private double normalizeAngle(double degrees){
-        while(degrees>180){
+        while(degrees > 180){
             degrees -= 360;
         }
-        while(degrees<-180){
-            degrees+=360;
+        while(degrees < -180){
+            degrees += 360;
         }
         return degrees;
     }
+
     private double wrapAround(double target_angle) {
-        while (target_angle < min_turret_angle) {
-            if (target_angle + 360.0 <= max_turret_angle) {
-                target_angle += 360.0;
+        double normalized = normalizeAngle(target_angle);
+
+        if (normalized > max_turret_angle || normalized < min_turret_angle) {
+            if (normalized > 0) {
+                normalized -= 180;
             } else {
-                break;
+                normalized += 180;
             }
         }
-        while (target_angle > max_turret_angle) {
-            if (target_angle - 360.0 >= min_turret_angle) {
-                target_angle -= 360.0;
-            } else {
-                break;
-            }
+
+        if (normalized < min_turret_angle) normalized = min_turret_angle;
+        if (normalized > max_turret_angle) normalized = max_turret_angle;
+
+        return normalized;
+    }
+
+    private void updateTurret(double servoPos) {
+        if(Math.abs(servoPos - lastPos) > TURRET_TOLERANCE) {
+           leftTurretServo.setPosition(servoPos);
+           rightTurretServo.setPosition(servoPos);
+           lastPos = servoPos;
         }
-        return target_angle;
     }
 
     public void incrementShooterSlower(){
-        shooter_multiplier -= 0.02;
+        shooter_multiplier -= 0.025;
     }
 
     public void incrementShooterFaster(){
-        shooter_multiplier += 0.02;
+        shooter_multiplier += 0.025;
     }
 
     public void incrementHoodUp(){
-        hood_multiplier += 0.025;
-    }
-
-    public void incrementHoodDown(){
         hood_multiplier -= 0.025;
     }
 
+    public void incrementHoodDown(){
+        hood_multiplier += 0.025;
+    }
+
     public void incrementTurretLeft(){
-        pad_offset+=2.5;
+        pad_offset -= 1;
     }
 
     public void incrementTurretRight(){
-        pad_offset-=2.5;
+        pad_offset += 1;
     }
 
     public void setShooterMultiplier(double value){
         shooter_multiplier = value;
     }
+    public double getShooterMultiplier() {return shooter_multiplier;}
 
     public void setHoodMultiplier(double value){
         hood_multiplier = value;
     }
+    public double getHoodMultiplier() {return hood_multiplier;}
 
     public void setPadOffset(double value){
         pad_offset = value;
@@ -322,29 +319,29 @@ public class Outtake {
         GOAL_Y = y;
     }
 
+    public double getGoalX(){
+        return GOAL_X;
+    }
+
     public void update (double voltage, Pose robotPose, Vector robotVelocity, Vector robotAcceleration, TelemetryPacket packet) {
         double robotHeadingRadians = robotPose.getHeading();
 
-        double turretX = robotPose.getX()
-                + (ROBOT_CENTER_TO_TURRET_DX * Math.cos(robotHeadingRadians))
-                - (ROBOT_CENTER_TO_TURRET_DY * Math.sin(robotHeadingRadians));
+        double cosH = Math.cos(robotHeadingRadians);
+        double sinH = Math.sin(robotHeadingRadians);
 
-        double turretY = robotPose.getY()
-                + (ROBOT_CENTER_TO_TURRET_DX * Math.sin(robotHeadingRadians))
-                + (ROBOT_CENTER_TO_TURRET_DY * Math.cos(robotHeadingRadians));
+        double turretX = robotPose.getX() + (ROBOT_CENTER_TO_TURRET_DX * cosH) - (ROBOT_CENTER_TO_TURRET_DY * sinH);
+        double turretY = robotPose.getY() + (ROBOT_CENTER_TO_TURRET_DX * sinH) + (ROBOT_CENTER_TO_TURRET_DY * cosH);
 
         double diffX = GOAL_X - turretX;
         double diffY = GOAL_Y - turretY;
 
-        double pivotDist = Math.hypot(diffX, diffY);
-        distanceToGoal = pivotDist - TURRET_PIVOT_TO_BARREL;
+        distanceToGoal = Math.hypot(diffX, diffY) - TURRET_PIVOT_TO_BARREL;
 
         double targetDiffX = diffX;
         double targetDiffY = diffY;
 
         double vX = robotVelocity.getXComponent();
         double vY = robotVelocity.getYComponent();
-
         double aX = robotAcceleration.getXComponent();
         double aY = robotAcceleration.getYComponent();
 
@@ -367,9 +364,11 @@ public class Outtake {
         double target_angle = 0;
         if(getTurretState() == TurretState.AUTO){
             double rawTargetRad = Math.atan2(targetDiffY, targetDiffX) - robotHeadingRadians;
-            target_angle = normalizeAngle(Math.toDegrees(rawTargetRad) + pad_offset);
-
-            target_angle = Math.max(min_turret_angle, Math.min(wrapAround(target_angle), max_turret_angle));
+            /*
+            target_angle = normalizeAngle(Math.toDegrees(rawTargetRad) - pad_offset);
+            target_angle = Math.max(min_turret_angle, Math.min(target_angle, max_turret_angle));
+             */
+            target_angle = wrapAround(Math.toDegrees(rawTargetRad) - pad_offset);
         }
         else if(getTurretState() == TurretState.FRONT) {
             target_angle = Math.max(min_turret_angle, Math.min(test_target, max_turret_angle));
@@ -381,15 +380,12 @@ public class Outtake {
         if(getShooterState() == ShooterState.SHOOT){
             double aimAngleRad = Math.atan2(targetDiffY, targetDiffX);
 
-            double robotVelIntoShot = (vX * Math.cos(aimAngleRad))
-                    + (vY * Math.sin(aimAngleRad));
-
+            double robotVelIntoShot = (vX * Math.cos(aimAngleRad)) + (vY * Math.sin(aimAngleRad));
             double robotAccelIntoShot = (aX * Math.cos(aimAngleRad)) + (aY * Math.sin(aimAngleRad));
 
             double effectiveVelocity = robotVelIntoShot + (robotAccelIntoShot * SHOOTER_ACCEL_GAIN);
 
             double correctionFactor;
-
             if (effectiveVelocity > 0) {
                 correctionFactor = TPS_TO_INCHES_FORWARD;
             } else {
@@ -403,18 +399,18 @@ public class Outtake {
         else if(getShooterState() == ShooterState.TEST){
             targetTPS = calculateTestTargetTPS();
         }
-        else if(getShooterState() == ShooterState.IDLE){
-            targetTPS = 1750;
-        }
         else if(getShooterState() == ShooterState.INIT){
             targetTPS = 0;
         }
+        else if(getShooterState() == ShooterState.IDLE) {
+            targetTPS = 600;
+        }
 
         if (getShooterState() != ShooterState.POWER) {
-            shooterPIDF.setPIDF(sP, 0, sD, 0); //Poti sterge asta dupa tuning
-            feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, 0);//si asta
+            //shooterPIDF.setPIDF(sP, 0, 0, 0);
+            //feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 
-            double currentTPS = Math.abs(rightShooterMotor.getVelocity());
+            double currentTPS = leftShooterMotor.getVelocity();
 
             double pidCorrection = shooterPIDF.calculate(currentTPS, targetTPS);
             double ffOutput = feedforward.calculate(targetTPS) * (12.0 / voltage);
@@ -430,18 +426,16 @@ public class Outtake {
         }
 
         if(getHoodState() == HoodState.AUTO){
-            double targetHoodPos = calculateTargetHood(distanceToGoal);
-            hoodServo.setPosition(targetHoodPos);
+            hoodServo.setPosition(calculateTargetHood(distanceToGoal));
         }
         else if (getHoodState() == HoodState.TEST) {
-            double targetHoodPos = calculateTestTargetHood();
-            hoodServo.setPosition(targetHoodPos);
+            hoodServo.setPosition(calculateTestTargetHood());
         }
 
-        double servoPosition = angleToServoPos(target_angle);
-        leftTurretServo.setPosition(servoPosition);
-        rightTurretServo.setPosition(servoPosition);
-
+        //updateTurret(angleToServoPos(target_angle));
+        double servoPos = angleToServoPos(target_angle);
+        leftTurretServo.setPosition(servoPos);
+        rightTurretServo.setPosition(servoPos);
 
         if(DEBUG_DRAWING) {
             double centeredX = robotPose.getX() - 72.0;

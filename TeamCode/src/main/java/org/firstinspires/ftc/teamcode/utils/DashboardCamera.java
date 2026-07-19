@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.utils;
+/*package org.firstinspires.ftc.teamcode.utils;
 
 import android.provider.MediaStore;
 
@@ -14,7 +14,7 @@ import org.firstinspires.ftc.robotcore.external.stream.CameraStreamSource;
 import org.firstinspires.ftc.teamcode.utils.LimelightStream;
 import org.opencv.videoio.VideoCapture;
 
-@com.qualcomm.robotcore.eventloop.opmode.TeleOp(group = "zzzz")
+@com.qualcomm.robotcore.eventloop.opmode.TeleOp
 public class DashboardCamera extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -30,3 +30,4 @@ public class DashboardCamera extends LinearOpMode {
         }
     }
 }
+ */

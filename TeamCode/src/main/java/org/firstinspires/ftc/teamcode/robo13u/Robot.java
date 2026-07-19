@@ -1,14 +1,14 @@
 package org.firstinspires.ftc.teamcode.robo13u;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.localization.PoseTracker;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Vector;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -17,7 +17,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
@@ -27,12 +26,12 @@ import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 
 import java.util.List;
 
+@Config
 public class Robot {
-
     public static boolean DEBUGGING_TELEMETRY = false;
 
-    public final DcMotorEx rightIntakeMotor;
-    public final DcMotorEx leftIntakeMotor;
+    public final DcMotorEx transferMotor;
+    public final DcMotorEx spinnerMotor;
 
     public final DcMotorEx leftShooterMotor;
     public final DcMotorEx rightShooterMotor;
@@ -42,6 +41,9 @@ public class Robot {
 
     public final Servo leftTurretServo;
     public final Servo rightTurretServo;
+
+    public final Servo leftLED;
+    public final Servo rightLED;
 
     public final CRServo upLeftLiftServo;
     public final CRServo downLeftLiftServo;
@@ -60,23 +62,22 @@ public class Robot {
     private final MultipleTelemetry telemetry;
     private final LinearOpMode linearOpMode;
 
-    private final LynxModule controlHub;
-    private final LynxModule expansionHub;
+    private final List<LynxModule> allHubs;
 
     private double lastTelemetryLooptimeLog;
 
     public static double lastVoltageReading = 12.0;
     public HardwareMap hardwareMap = null;
 
-    private final ElapsedTime voltageTimer = new ElapsedTime();
-    private static final double VOLTAGE_TIMEOUT = 0.5;
+    private long lastVoltageCheckTime = 0;
+    private static final double VOLTAGE_TIMEOUT_MS = 250;
 
     public Robot (LinearOpMode linearOpMode, Pose startPose) {
-
+        this.linearOpMode = linearOpMode;
         hardwareMap = linearOpMode.hardwareMap;
 
-        rightIntakeMotor = hardwareMap.get(DcMotorEx.class, "rightIntakeMotor");
-        leftIntakeMotor = hardwareMap.get(DcMotorEx.class, "leftIntakeMotor");
+        transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");
+        spinnerMotor = hardwareMap.get(DcMotorEx.class, "spinnerMotor");
 
         leftShooterMotor = hardwareMap.get(DcMotorEx.class, "leftShooterMotor");
         rightShooterMotor = hardwareMap.get(DcMotorEx.class, "rightShooterMotor");
@@ -86,6 +87,9 @@ public class Robot {
 
         leftTurretServo = hardwareMap.get(Servo.class, "leftTurretServo");
         rightTurretServo = hardwareMap.get(Servo.class, "rightTurretServo");
+
+        leftLED = hardwareMap.get(Servo.class, "leftLED");
+        rightLED = hardwareMap.get(Servo.class, "rightLED");
 
         upLeftLiftServo = hardwareMap.get(CRServo.class, "upLeftLiftServo");
         downLeftLiftServo = hardwareMap.get(CRServo.class, "downLeftLiftServo");
@@ -101,12 +105,12 @@ public class Robot {
         }
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
-        voltageTimer.reset();
+        lastVoltageReading = voltageSensor.getVoltage();
 
-        rightIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        transferMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        spinnerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        leftShooterMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftShooterMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         rightShooterMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         lockServo.setDirection(Servo.Direction.FORWARD);
@@ -116,21 +120,20 @@ public class Robot {
         rightTurretServo.setDirection(Servo.Direction.FORWARD);
 
         upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
-        downLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
-        upRightLiftServo.setDirection(CRServo.Direction.FORWARD);
+        downLeftLiftServo.setDirection(CRServo.Direction.REVERSE);
+        upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
         downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
         mecanumDrive = new MecanumDrive(linearOpMode, this);
-        intake = new Intake(rightIntakeMotor, leftIntakeMotor, lockServo);
+        intake = new Intake(spinnerMotor, transferMotor, lockServo, leftLED, rightLED);
         outtake = new Outtake(leftShooterMotor, rightShooterMotor, hoodServo, leftTurretServo, rightTurretServo);
         lift = new Lift(upLeftLiftServo, downLeftLiftServo, upRightLiftServo, downRightLiftServo);
 
-        controlHub = hardwareMap.get(LynxModule.class, "Control Hub");
-        controlHub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
-        expansionHub = hardwareMap.get(LynxModule.class, "Expansion Hub 2");
-        expansionHub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        allHubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
 
-        this.linearOpMode = linearOpMode;
         if(DEBUGGING_TELEMETRY) {
             this.telemetry = new MultipleTelemetry(linearOpMode.telemetry, FtcDashboard.getInstance().getTelemetry());
         }
@@ -144,51 +147,62 @@ public class Robot {
     }
 
     public void update() {
-        TelemetryPacket packet = new TelemetryPacket();
+        for (LynxModule hub : allHubs) {
+            hub.clearBulkCache();
+        }
 
-        controlHub.clearBulkCache();
-        expansionHub.clearBulkCache();
-
-        if (voltageTimer.seconds() > VOLTAGE_TIMEOUT) {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastVoltageCheckTime > VOLTAGE_TIMEOUT_MS) {
             lastVoltageReading = voltageSensor.getVoltage();
-            voltageTimer.reset();
+            lastVoltageCheckTime = currentTime;
         }
 
         intake.update(lastVoltageReading);
+
         poseTracker.update();
-        outtake.update(lastVoltageReading, poseTracker.getPose(), poseTracker.getVelocity(), poseTracker.getAcceleration(), packet);
+
+        Pose currentPose = poseTracker.getPose();
+        Vector currentVelocity = poseTracker.getVelocity();
+        Vector currentAcceleration = poseTracker.getAcceleration();
+
+        TelemetryPacket packet = new TelemetryPacket();
+        packet.clearLines();
+
+        outtake.update(lastVoltageReading, currentPose, currentVelocity, currentAcceleration, packet);
 
         double currentSeconds = System.nanoTime() / 1e9;
         double loopTime = currentSeconds - lastTelemetryLooptimeLog;
-
-        packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
-        packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
-        /*
-        packet.put("Robot Pose: ", poseTracker.getPose().toString());
-        packet.put("Robot Velocity: ", poseTracker.getVelocity().toString());
-        packet.put("Robot Acceleretion: ", poseTracker.getAcceleration().toString());
-
-        packet.put("shooter RPM: ", (outtake.rightShooterMotor.getVelocity()) / 28.0 * 60.0);
-        packet.put("shooter TPS: ", outtake.rightShooterMotor.getVelocity());
-        packet.put("shooter power: ", outtake.rightShooterMotor.getPower());
-        packet.put("TARGET TPS: ", outtake.getTargetTPS());
-        packet.put("TARGET RPM: ", (outtake.getTargetTPS()) / 28.0 * 60.0);
-
-        packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(poseTracker.getPose()));
-
-        packet.put("IntakeMotorState: ", intake.getIntakeMotorState().toString());
-        packet.put("LockState: ", intake.getLockState().toString());
-        packet.put("TurretState: ", outtake.getTurretState().toString());
-        packet.put("ShooterState: ", outtake.getShooterState().toString());
-        packet.put("HoodState: ", outtake.getHoodState().toString());
-        packet.put("LiftState: ", lift.getLiftState().toString());
-
-        packet.put("IntakeState: ", intake.getIntakeState().toString());
-        packet.put("OuttakeState: ", outtake.getOuttakeState().toString());
-        */
         lastTelemetryLooptimeLog = currentSeconds;
 
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        if (DEBUGGING_TELEMETRY) {
+            packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
+            //packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
+            /*
+            packet.put("Robot Pose: ", poseTracker.getPose().toString());
+            packet.put("Robot Velocity: ", poseTracker.getVelocity().toString());
+            packet.put("Robot Acceleretion: ", poseTracker.getAcceleration().toString());
+            packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(currentPose));
+            packet.put("shooter RPM: ", (outtake.leftShooterMotor.getVelocity()) / 28.0 * 60.0);
+            packet.put("ShooterMultiplier: ", outtake.getShooterMultiplier());
+            */
+            //packet.put("shooter TPS: ", outtake.leftShooterMotor.getVelocity());
+            //packet.put("TARGET TPS: ", outtake.getTargetTPS());
+            /*
+            packet.put("shooter power: ", outtake.leftShooterMotor.getPower());
+            packet.put("TARGET RPM: ", (outtake.getTargetTPS()) / 28.0 * 60.0);
+            packet.put("HoodMultiplier: ", outtake.getHoodMultiplier());
+            packet.put("HoodPose: ", outtake.hoodServo.getPosition());
+            packet.put("IntakeMotorState: ", intake.getIntakeMotorState().toString());
+            packet.put("LockState: ", intake.getLockState().toString());
+            packet.put("TurretState: ", outtake.getTurretState().toString());
+            packet.put("ShooterState: ", outtake.getShooterState().toString());
+            packet.put("HoodState: ", outtake.getHoodState().toString());
+            packet.put("LiftState: ", lift.getLiftState().toString());
+            packet.put("IntakeState: ", intake.getIntakeState().toString());
+            packet.put("OuttakeState: ", outtake.getOuttakeState().toString());
+            */
+            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        }
 
     }
 

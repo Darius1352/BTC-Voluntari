@@ -18,8 +18,8 @@ public class motorTest extends LinearOpMode {
         DcMotorEx rf = hardwareMap.get(DcMotorEx.class, "rightFront");
         DcMotorEx rr = hardwareMap.get(DcMotorEx.class, "rightRear");
 
-        DcMotorEx i1 = hardwareMap.get(DcMotorEx.class, "leftIntakeMotor");
-        DcMotorEx i2 = hardwareMap.get(DcMotorEx.class, "rightIntakeMotor");
+        DcMotorEx i1 = hardwareMap.get(DcMotorEx.class, "spinnerMotor");
+        DcMotorEx i2 = hardwareMap.get(DcMotorEx.class, "transferMotor");
         DcMotorEx s1 = hardwareMap.get(DcMotorEx.class, "leftShooterMotor");
         DcMotorEx s2 = hardwareMap.get(DcMotorEx.class, "rightShooterMotor");
 

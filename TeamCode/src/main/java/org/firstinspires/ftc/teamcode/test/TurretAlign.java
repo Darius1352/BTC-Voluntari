@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.test;
+/*package org.firstinspires.ftc.teamcode.test;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -19,6 +19,11 @@ public class TurretAlign extends LinearOpMode {
         while (!isStopRequested() && opModeIsActive()) {
             leftTurretServo.setPosition(0.5);
             rightTurretServo.setPosition(0.5);
+
+            telemetry.addData("actualPosLeft: ", leftTurretServo.getPosition());
+            telemetry.addData("actualPosRight: ", rightTurretServo.getPosition());
+            telemetry.update();
         }
     }
 }
+ */

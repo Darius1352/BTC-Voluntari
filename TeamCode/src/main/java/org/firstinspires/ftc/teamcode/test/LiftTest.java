@@ -18,14 +18,17 @@ public class LiftTest extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
-
         upLeftLiftServo = hardwareMap.get(CRServo.class, "upLeftLiftServo");
         downLeftLiftServo = hardwareMap.get(CRServo.class, "downLeftLiftServo");
         upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
         downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
 
-        telemetry.addData("Status: ", "init");
+        upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
+        downLeftLiftServo.setDirection(CRServo.Direction.REVERSE);
+        upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
+        downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
+
+        telemetry.addData("robot", "init");
         telemetry.update();
 
         waitForStart();
@@ -33,15 +36,10 @@ public class LiftTest extends LinearOpMode {
         while (opModeIsActive()) {
             double manualPower = 0.0;
             if (gamepad1.dpad_up) {
-                manualPower = 0.5;
+                manualPower = 1;
             } else if (gamepad1.dpad_down) {
-                manualPower = -0.5;
+                manualPower = -1;
             }
-
-            upLeftLiftServo.setDirection(CRServo.Direction.FORWARD);
-            downLeftLiftServo.setDirection(CRServo.Direction.REVERSE);
-            upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
-            downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
             upLeftLiftServo.setPower(manualPower);
             downLeftLiftServo.setPower(manualPower);

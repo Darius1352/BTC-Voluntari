@@ -12,8 +12,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 public class Motor implements  DcMotorEx
 {
     DcMotorEx motor;
-    private double lastSetPower = -1e7;
-    private double setPowerTolerance = 0.05;
+    private double lastPower = -1e7;
+    private double TOLERANCE = 0.05;
 
     public Motor(DcMotorEx motor){
         this.motor = motor;
@@ -196,14 +196,15 @@ public class Motor implements  DcMotorEx
 
     @Override
     public void setPower(double power) {
-        if(lastSetPower - setPowerTolerance <= power && power <= lastSetPower + setPowerTolerance && power != 0) return;
-        lastSetPower = power;
-        motor.setPower(power);
+        if (Math.abs(power - lastPower) > TOLERANCE || (power == 0.0 && lastPower != 0.0)) {
+            motor.setPower(power);
+            lastPower = power;
+        }
     }
 
     @Override
     public double getPower() {
-        return lastSetPower;
+        return lastPower;
     }
 
     @Override

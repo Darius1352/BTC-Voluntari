@@ -1,11 +1,10 @@
-package org.firstinspires.ftc.teamcode.test;
+/*package org.firstinspires.ftc.teamcode.test;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@TeleOp(name = "Continuous_Servo_Test")
+@TeleOp(name = "Continuous_Servo_Test", group = "Test")
 public class CRservoTest extends LinearOpMode {
 
     @Override
@@ -21,23 +20,47 @@ public class CRservoTest extends LinearOpMode {
         upRightLiftServo.setDirection(CRServo.Direction.REVERSE);
         downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
-        if (gamepad1.square) {
-            upLeftLiftServo.setPower(0.5);
-            downLeftLiftServo.setPower(0.5);
-            telemetry.addData("Running Motor: ", "leftServos");
-        } else {
-            upLeftLiftServo.setPower(0);
-            downLeftLiftServo.setPower(0);
-        }
+        waitForStart();
 
-        if (gamepad1.circle) {
-            upRightLiftServo.setPower(0.5);
-            downRightLiftServo.setPower(0.5);
-            telemetry.addData("Running Motor: ", "rightServos");
-        } else {
-            upRightLiftServo.setPower(0);
-            downRightLiftServo.setPower(0);
+        while (opModeIsActive()) {
+
+            if (gamepad1.square) {
+                upLeftLiftServo.setPower(0.5);
+                downLeftLiftServo.setPower(0.5);
+                telemetry.addData("Running Motor UP: ", "leftServos");
+            } else {
+                upLeftLiftServo.setPower(0);
+                downLeftLiftServo.setPower(0);
+            }
+
+            if (gamepad1.triangle) {
+                upRightLiftServo.setPower(0.5);
+                downRightLiftServo.setPower(0.5);
+                telemetry.addData("Running Motor UP: ", "rightServos");
+            } else {
+                upRightLiftServo.setPower(0);
+                downRightLiftServo.setPower(0);
+            }
+
+            if (gamepad1.cross) {
+                upLeftLiftServo.setPower(-0.5);
+                downLeftLiftServo.setPower(-0.5);
+                telemetry.addData("Running Motor DOWN: ", "leftServos");
+            } else {
+                upLeftLiftServo.setPower(0);
+                downLeftLiftServo.setPower(0);
+            }
+
+            if (gamepad1.circle) {
+                upRightLiftServo.setPower(-0.5);
+                downRightLiftServo.setPower(-0.5);
+                telemetry.addData("Running Motor DOWN: ", "rightServos");
+            } else {
+                upRightLiftServo.setPower(0);
+                downRightLiftServo.setPower(0);
+            }
         }
         
     }
 }
+ */

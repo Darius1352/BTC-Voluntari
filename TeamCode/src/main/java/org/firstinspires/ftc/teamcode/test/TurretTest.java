@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.utils.GamepadEx;
 
 @TeleOp(name = "TURRET_LIMIT_TEST", group = "Test")
 public class TurretTest extends LinearOpMode {
-    double TOTAL_SERVO_RANGE_DEGREES = 360;
+    double TOTAL_SERVO_RANGE_DEGREES = 318.57;
     double TURRET_CENTER_POS = 0.5;
     double testAngle = 0;
     Servo leftTurretServo;
@@ -25,18 +25,23 @@ public class TurretTest extends LinearOpMode {
         waitForStart();
 
         while(!isStopRequested() && opModeIsActive()) {
-            while(gamepad.isHeld(GamepadEx.Button.dpad_left)) {
-                testAngle -= 2.5;
-            }
-            while(gamepad.isHeld(GamepadEx.Button.dpad_right)) {
+            gamepad.update();
+
+            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_left)) {
                 testAngle += 2.5;
+            }
+            if(gamepad.wasJustPressed(GamepadEx.Button.dpad_right)) {
+                testAngle -= 2.5;
             }
 
             leftTurretServo.setPosition(angleToServoPos(testAngle));
             rightTurretServo.setPosition(angleToServoPos(testAngle));
 
             telemetry.addData("targetAngle: ", testAngle);
-            telemetry.addData("servoPos: ", angleToServoPos(testAngle));
+            telemetry.addData("servoTargetPos: ", angleToServoPos(testAngle));
+            telemetry.addData("actualPosLeft: ", leftTurretServo.getPosition());
+            telemetry.addData("actualPosRight: ", rightTurretServo.getPosition());
+            telemetry.update();
         }
 
     }
