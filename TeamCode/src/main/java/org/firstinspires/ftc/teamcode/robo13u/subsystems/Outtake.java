@@ -144,7 +144,6 @@ public class Outtake {
 
         this.rightShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         this.rightShooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
     }
 
     public void setHoodState (HoodState newState) {
@@ -246,14 +245,6 @@ public class Outtake {
         if (normalized > max_turret_angle) normalized = max_turret_angle;
 
         return normalized;
-    }
-
-    private void updateTurret(double servoPos) {
-        if(Math.abs(servoPos - lastPos) > TURRET_TOLERANCE) {
-           leftTurretServo.setPosition(servoPos);
-           rightTurretServo.setPosition(servoPos);
-           lastPos = servoPos;
-        }
     }
 
     public void incrementShooterSlower(){
@@ -432,7 +423,6 @@ public class Outtake {
             hoodServo.setPosition(calculateTestTargetHood());
         }
 
-        //updateTurret(angleToServoPos(target_angle));
         double servoPos = angleToServoPos(target_angle);
         leftTurretServo.setPosition(servoPos);
         rightTurretServo.setPosition(servoPos);

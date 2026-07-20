@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -23,6 +24,9 @@ import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Lift;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.MecanumDrive;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
+import org.firstinspires.ftc.teamcode.utils.CRServoWrapper;
+import org.firstinspires.ftc.teamcode.utils.Motor;
+import org.firstinspires.ftc.teamcode.utils.ServoWrapper;
 
 import java.util.List;
 
@@ -30,8 +34,8 @@ import java.util.List;
 public class Robot {
     public static boolean DEBUGGING_TELEMETRY = false;
 
-    public final DcMotorEx transferMotor;
-    public final DcMotorEx spinnerMotor;
+    public final DcMotorEx leftIntakeMotor;
+    public final DcMotorEx rightIntakeMotor;
 
     public final DcMotorEx leftShooterMotor;
     public final DcMotorEx rightShooterMotor;
@@ -44,6 +48,9 @@ public class Robot {
 
     public final Servo leftLED;
     public final Servo rightLED;
+
+    public final DigitalChannel leftSensor;
+    public final DigitalChannel rightSensor;
 
     public final CRServo upLeftLiftServo;
     public final CRServo downLeftLiftServo;
@@ -76,25 +83,28 @@ public class Robot {
         this.linearOpMode = linearOpMode;
         hardwareMap = linearOpMode.hardwareMap;
 
-        transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");
-        spinnerMotor = hardwareMap.get(DcMotorEx.class, "spinnerMotor");
+        leftIntakeMotor = new Motor(hardwareMap.get(DcMotorEx.class, "leftIntakeMotor"));
+        rightIntakeMotor = new Motor(hardwareMap.get(DcMotorEx.class, "rightIntakeMotor"));
 
-        leftShooterMotor = hardwareMap.get(DcMotorEx.class, "leftShooterMotor");
-        rightShooterMotor = hardwareMap.get(DcMotorEx.class, "rightShooterMotor");
+        leftShooterMotor = new Motor(hardwareMap.get(DcMotorEx.class, "leftShooterMotor"));
+        rightShooterMotor = new Motor(hardwareMap.get(DcMotorEx.class, "rightShooterMotor"));
 
-        lockServo = hardwareMap.get(Servo.class, "lockServo");
-        hoodServo = hardwareMap.get(Servo.class, "hoodServo");
+        lockServo = new ServoWrapper(hardwareMap.get(Servo.class, "lockServo"));
+        hoodServo = new ServoWrapper(hardwareMap.get(Servo.class, "hoodServo"));
 
-        leftTurretServo = hardwareMap.get(Servo.class, "leftTurretServo");
-        rightTurretServo = hardwareMap.get(Servo.class, "rightTurretServo");
+        leftTurretServo = new ServoWrapper(hardwareMap.get(Servo.class, "leftTurretServo"));
+        rightTurretServo = new ServoWrapper(hardwareMap.get(Servo.class, "rightTurretServo"));
 
-        leftLED = hardwareMap.get(Servo.class, "leftLED");
-        rightLED = hardwareMap.get(Servo.class, "rightLED");
+        leftLED = new ServoWrapper(hardwareMap.get(Servo.class, "leftLED"));
+        rightLED = new ServoWrapper(hardwareMap.get(Servo.class, "rightLED"));
 
-        upLeftLiftServo = hardwareMap.get(CRServo.class, "upLeftLiftServo");
-        downLeftLiftServo = hardwareMap.get(CRServo.class, "downLeftLiftServo");
-        upRightLiftServo = hardwareMap.get(CRServo.class, "upRightLiftServo");
-        downRightLiftServo = hardwareMap.get(CRServo.class, "downRightLiftServo");
+        leftSensor = hardwareMap.get(DigitalChannel.class, "leftSensor");
+        rightSensor = hardwareMap.get(DigitalChannel.class, "rightSensor");
+
+        upLeftLiftServo = new CRServoWrapper(hardwareMap.get(CRServo.class, "upLeftLiftServo"));
+        downLeftLiftServo = new CRServoWrapper(hardwareMap.get(CRServo.class, "downLeftLiftServo"));
+        upRightLiftServo = new CRServoWrapper(hardwareMap.get(CRServo.class, "upRightLiftServo"));
+        downRightLiftServo = new CRServoWrapper(hardwareMap.get(CRServo.class, "downRightLiftServo"));
 
         pinpoint = new PinpointLocalizer(hardwareMap, Constants.localizerConstants);
 
@@ -107,8 +117,8 @@ public class Robot {
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
         lastVoltageReading = voltageSensor.getVoltage();
 
-        transferMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        spinnerMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightIntakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftShooterMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         rightShooterMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -125,7 +135,7 @@ public class Robot {
         downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
         mecanumDrive = new MecanumDrive(linearOpMode, this);
-        intake = new Intake(spinnerMotor, transferMotor, lockServo, leftLED, rightLED);
+        intake = new Intake(leftIntakeMotor, rightIntakeMotor, lockServo, leftLED, rightLED, leftSensor, rightSensor);
         outtake = new Outtake(leftShooterMotor, rightShooterMotor, hoodServo, leftTurretServo, rightTurretServo);
         lift = new Lift(upLeftLiftServo, downLeftLiftServo, upRightLiftServo, downRightLiftServo);
 

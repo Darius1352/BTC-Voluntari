@@ -15,10 +15,8 @@ public class Intake {
     public Servo lockServo;
     public DigitalChannel leftSensor;
     public DigitalChannel rightSensor;
-
     public Servo leftLED;
     public Servo rightLED;
-
     public IntakeState intakeState;
     public static IntakeMotorState intakeMotorState;
     public static LockState lockState;
@@ -64,15 +62,20 @@ public class Intake {
         }
     }
 
-    public Intake(DcMotorEx leftIntakeMotor, DcMotorEx rightIntakeMotor, Servo lockServo, Servo leftLED, Servo rightLED){
-        this.leftIntakeMotor = new Motor(leftIntakeMotor);
-        this.rightIntakeMotor = new Motor(rightIntakeMotor);
+    public Intake(DcMotorEx leftIntakeMotor, DcMotorEx rightIntakeMotor, Servo lockServo, Servo leftLED, Servo rightLED, DigitalChannel leftSensor, DigitalChannel rightSensor){
+        this.leftIntakeMotor = leftIntakeMotor;
+        this.rightIntakeMotor = rightIntakeMotor;
         this.lockServo = lockServo;
         this.leftLED = leftLED;
         this.rightLED = rightLED;
+        this.leftSensor = leftSensor;
+        this.rightSensor = rightSensor;
 
-        leftLED.setPosition(COLOR_BALL);
-        rightLED.setPosition(COLOR_BALL);
+        leftLED.setPosition(COLOR_EMPTY);
+        rightLED.setPosition(COLOR_EMPTY);
+
+        leftSensor.setMode(DigitalChannel.Mode.INPUT);
+        rightSensor.setMode(DigitalChannel.Mode.INPUT);
 
         setLockState(LockState.LOCKED);
         setIntakeMotorState(IntakeMotorState.LOCKED);
@@ -104,31 +107,23 @@ public class Intake {
         return intakeMotorState;
     }
 
+    public boolean hasLeftBall() {
+        return !leftSensor.getState();
+    }
+
+    public boolean hasRightBall() {
+        return !rightSensor.getState();
+    }
+
     public void update(double voltage){
         lockServo.setPosition(lockState.getPosition());
-
         double intakePower = intakeMotorState.getPower() * (12.0 / voltage);
         leftIntakeMotor.setPower(intakePower);
         rightIntakeMotor.setPower(intakePower);
-        /*
-        boolean leftBall = !rightSensor.getState();
-        boolean rightBall = !leftSensor.getState();
 
-        if (leftBall) {
-            leftLED.setPosition(COLOR_BALL);
-        }
-        else {
-            leftLED.setPosition(COLOR_EMPTY);
-        }
+        leftLED.setPosition(hasLeftBall() ? COLOR_BALL : COLOR_EMPTY);
+        rightLED.setPosition(hasRightBall() ? COLOR_BALL : COLOR_EMPTY);
 
-        if (rightBall) {
-            rightLED.setPosition(COLOR_BALL);
-        }
-        else {
-            rightLED.setPosition(COLOR_EMPTY);
-
-        }
-         */
     }
 
 }

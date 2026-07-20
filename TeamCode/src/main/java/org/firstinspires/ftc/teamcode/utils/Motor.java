@@ -187,6 +187,7 @@ public class Motor implements  DcMotorEx
     @Override
     public void setDirection(Direction direction) {
         motor.setDirection(direction);
+        lastPower = -1e7;
     }
 
     @Override
