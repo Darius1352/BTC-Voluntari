@@ -28,19 +28,17 @@ public class Outtake {
     public static double pad_offset = 0;
     public static double min_turret_angle = -160, max_turret_angle = 160;
     public static double test_target = 0;
-    public static double base_target = 0;
-    public static double GOAL_X = 144.0;
+    public static double base_target = -160;
+    public static double GOAL_X = 0;
     public static double GOAL_Y = 0;
     public static double TURRET_CENTER_POS = 0.5;
-    public static double TOTAL_SERVO_RANGE_DEGREES = 318.57;
+    public static double TOTAL_SERVO_RANGE_DEGREES = 310;
     public static double ROBOT_CENTER_TO_TURRET_DX = 2.657;
     public static double ROBOT_CENTER_TO_TURRET_DY = 0;
     public static double TURRET_PIVOT_TO_BARREL = 1;
     public static double TPS_TO_INCHES_PER_SEC = 0.2;
     public static double INERTIA_GAIN = 1.67;
     public static double ACCEL_FEEDFORWARD_GAIN = 0.005;
-    public static double TURRET_TOLERANCE = 0.005;
-    private static double lastPos = -1;
 
     private final PIDFController shooterPIDF;
     private SimpleMotorFeedforward feedforward;
@@ -48,7 +46,7 @@ public class Outtake {
     public static double TPS_TO_INCHES_FORWARD = 0.9;
     public static double SHOOTER_ACCEL_GAIN = 0.3;
     public static double skStatic = 0.125, skVelocity = 0.00043, skAcceleration = 0.01;
-    public static double sP = 0.01;
+    public static double sP = 0.0055;
     public static double test_TPS = 1000;
     public static double shooter_multiplier = 1;
     public static double targetTPS = 0;
@@ -230,23 +228,6 @@ public class Outtake {
         return degrees;
     }
 
-    private double wrapAround(double target_angle) {
-        double normalized = normalizeAngle(target_angle);
-
-        if (normalized > max_turret_angle || normalized < min_turret_angle) {
-            if (normalized > 0) {
-                normalized -= 180;
-            } else {
-                normalized += 180;
-            }
-        }
-
-        if (normalized < min_turret_angle) normalized = min_turret_angle;
-        if (normalized > max_turret_angle) normalized = max_turret_angle;
-
-        return normalized;
-    }
-
     public void incrementShooterSlower(){
         shooter_multiplier -= 0.025;
     }
@@ -264,11 +245,11 @@ public class Outtake {
     }
 
     public void incrementTurretLeft(){
-        pad_offset -= 1;
+        pad_offset -= 1.5;
     }
 
     public void incrementTurretRight(){
-        pad_offset += 1;
+        pad_offset += 1.5;
     }
 
     public void setShooterMultiplier(double value){
@@ -355,17 +336,15 @@ public class Outtake {
         double target_angle = 0;
         if(getTurretState() == TurretState.AUTO){
             double rawTargetRad = Math.atan2(targetDiffY, targetDiffX) - robotHeadingRadians;
-            /*
-            target_angle = normalizeAngle(Math.toDegrees(rawTargetRad) - pad_offset);
+
+            target_angle = normalizeAngle(Math.toDegrees(rawTargetRad) + pad_offset);
             target_angle = Math.max(min_turret_angle, Math.min(target_angle, max_turret_angle));
-             */
-            target_angle = wrapAround(Math.toDegrees(rawTargetRad) - pad_offset);
         }
         else if(getTurretState() == TurretState.FRONT) {
             target_angle = Math.max(min_turret_angle, Math.min(test_target, max_turret_angle));
         }
         else if(getTurretState() == TurretState.BASE) {
-            target_angle = Math.max(min_turret_angle, Math.min(base_target, max_turret_angle));
+            target_angle = base_target;
         }
 
         if(getShooterState() == ShooterState.SHOOT){
@@ -424,8 +403,8 @@ public class Outtake {
         }
 
         double servoPos = angleToServoPos(target_angle);
-        leftTurretServo.setPosition(servoPos);
-        rightTurretServo.setPosition(servoPos);
+        leftTurretServo.setPosition(1.0-servoPos);
+        rightTurretServo.setPosition(1.0-servoPos);
 
         if(DEBUG_DRAWING) {
             double centeredX = robotPose.getX() - 72.0;

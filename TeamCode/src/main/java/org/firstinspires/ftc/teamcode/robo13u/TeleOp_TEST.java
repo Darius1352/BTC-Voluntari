@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.commandbase.InstantCommand;
 import org.firstinspires.ftc.teamcode.commandbase.ParallelCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SequentialCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SleepCommand;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Lift;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
@@ -50,6 +51,7 @@ public class TeleOp_TEST extends LinearOpMode {
                 new InstantCommand(()-> robot.outtake.setGoalXY(0,144))
         ).run(new TelemetryPacket());
 
+        follower = Constants.createFollower(hardwareMap);
         buildBasePath();
 
         waitForStart();
@@ -109,34 +111,6 @@ public class TeleOp_TEST extends LinearOpMode {
                     );
                 }
             }
-            /*
-            if(gamepad.wasJustPressed(GamepadEx.Button.options)) {
-                if (!follower.isBusy()) {
-                    runningCommand = new SequentialCommand(
-                            new InstantCommand(() -> follower = Constants.createFollower(hardwareMap)),
-                            new InstantCommand(this::buildBasePath),
-
-                            new InstantCommand(() -> robot.outtake.setTurretState(Outtake.TurretState.BASE)),
-                            new SleepCommand(0.05),
-
-                            new InstantCommand(() -> follower.setStartingPose(resetPose)),
-                            new SleepCommand(0.05),
-
-                            new InstantCommand(() -> follower.followPath(base)),
-                            new WaitUntilCommand(() -> !follower.isBusy()),
-                            new InstantCommand(() -> follower.holdPoint(follower.poseTracker.getPose())),
-                            new SleepCommand(0.05),
-
-                            new InstantCommand(() -> robot.lift.setLiftState(Lift.LiftState.UP)),
-                            new SleepCommand(0.5),
-                            new InstantCommand(() -> robot.lift.setLiftState(Lift.LiftState.IDLE))
-                    );
-                }
-                else {
-                    runningCommand = null;
-                }
-            }
-             */
 
             if(gamepad.wasJustPressed(GamepadEx.Button.options)) {
                 if (robot.lift.getLiftState() == Lift.LiftState.IDLE) {
@@ -191,9 +165,9 @@ public class TeleOp_TEST extends LinearOpMode {
             if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
                 robot.mecanumDrive.imu.setYaw(0);
 
-                robot.poseTracker.setPose(resetPose);
-                robot.poseTracker.setPose(resetPose);
-                robot.poseTracker.setPose(resetPose);
+                robot.follower.setPose(resetPose);
+                robot.follower.setPose(resetPose);
+                robot.follower.setPose(resetPose);
 
                 runningCommand = new SequentialCommand(
                         new InstantCommand(()-> robot.outtake.setPadOffset(0)),
@@ -201,23 +175,6 @@ public class TeleOp_TEST extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1))
                 );
             }
-             /*
-            if(gamepad.wasJustPressed(GamepadEx.Button.ps)){
-                runningCommand = new SequentialCommand(
-                        new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.mecanumDrive.imu.setYaw(0)),
-                        new InstantCommand(()-> robot.poseTracker.setPose(resetPose)),
-                        new InstantCommand(()-> robot.poseTracker.setPose(resetPose)),
-                        new InstantCommand(()-> robot.poseTracker.setPose(resetPose)),
-                        new SleepCommand(0.05),
-                        new InstantCommand(()-> robot.outtake.setPadOffset(0)),
-                        new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
-                        new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
-                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(1))
-                );
-            }
-             */
 
             if (robot.outtake.getGoalX() == 0) {
                 robot.drive(-gamepad.gamepad.left_stick_y,
@@ -236,7 +193,7 @@ public class TeleOp_TEST extends LinearOpMode {
                 }
             }
 
-            telemetry.addData("distance: ", robot.outtake.getTrueShooterDistance(robot.poseTracker.getPose()));
+            telemetry.addData("distance: ", robot.outtake.getTrueShooterDistance(robot.follower.getPose()));
             telemetry.addData("shooterTPS: ", robot.outtake.leftShooterMotor.getVelocity());
             telemetry.addData("shooterMultiplier: ", robot.outtake.getShooterMultiplier());
             telemetry.addData("hoodPosition: ", robot.outtake.hoodServo.getPosition());

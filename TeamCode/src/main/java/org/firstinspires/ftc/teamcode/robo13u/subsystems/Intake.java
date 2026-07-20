@@ -71,8 +71,8 @@ public class Intake {
         this.leftSensor = leftSensor;
         this.rightSensor = rightSensor;
 
-        leftLED.setPosition(COLOR_EMPTY);
-        rightLED.setPosition(COLOR_EMPTY);
+        leftLED.setPosition(COLOR_BALL);
+        rightLED.setPosition(COLOR_BALL);
 
         leftSensor.setMode(DigitalChannel.Mode.INPUT);
         rightSensor.setMode(DigitalChannel.Mode.INPUT);
@@ -120,9 +120,10 @@ public class Intake {
         double intakePower = intakeMotorState.getPower() * (12.0 / voltage);
         leftIntakeMotor.setPower(intakePower);
         rightIntakeMotor.setPower(intakePower);
-
+        /*
         leftLED.setPosition(hasLeftBall() ? COLOR_BALL : COLOR_EMPTY);
         rightLED.setPosition(hasRightBall() ? COLOR_BALL : COLOR_EMPTY);
+         */
 
     }
 

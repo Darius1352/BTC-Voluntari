@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.robo13u;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -15,7 +14,6 @@ import org.firstinspires.ftc.teamcode.commandbase.InstantCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SequentialCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SleepCommand;
 import org.firstinspires.ftc.teamcode.commandbase.WaitUntilCommand;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 
@@ -24,7 +22,6 @@ public class AUTO_RED extends LinearOpMode {
 
     private static Robot robot;
     private ElapsedTime pathTimer;
-    private Follower follower;
     private final Pose startPose = new Pose(101, 9, Math.toRadians(90));
     private final Pose bottomCollectPose = new Pose(119, 33, Math.toRadians(90));
     private final double waitBottomC = 2.5;
@@ -59,20 +56,17 @@ public class AUTO_RED extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        robot = new Robot(this);
+        robot = new Robot(this, startPose);
         robot.mecanumDrive.imu.resetYaw();
-        robot.poseTracker.setCurrentPoseWithOffset(startPose);
-        follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startPose);
 
         pathTimer = new ElapsedTime();
 
         buildPaths();
 
-        new InstantCommand(()-> robot.outtake.setGoalXY(0, 144));
+        new InstantCommand(()-> robot.outtake.setGoalXY(144, 144));
         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT));
         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR));
-        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT));
+        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE));
         new InstantCommand(()-> robot.outtake.setPadOffset(2));
         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1));
         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1));
@@ -83,10 +77,11 @@ public class AUTO_RED extends LinearOpMode {
             telemetry.addData("robot", "init");
 
             new SequentialCommand(
+                    new InstantCommand(()->robot.outtake.setGoalXY(144,144)),
                     new InstantCommand(()-> robot.outtake.setPadOffset(2)),
                     new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
                     new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
-                    new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
+                    new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE)),
                     new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                     new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
             ).run(new TelemetryPacket());
@@ -95,6 +90,7 @@ public class AUTO_RED extends LinearOpMode {
         Command mainCommand = new SequentialCommand(
                 //INIT
                 new SequentialCommand(
+                        new InstantCommand(()->robot.outtake.setGoalXY(144,144)),
                         new InstantCommand(()-> robot.outtake.setPadOffset(2)),
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
@@ -105,7 +101,7 @@ public class AUTO_RED extends LinearOpMode {
 
                 //PRELOAD
                 new SequentialCommand(
-                        new InstantCommand(()->robot.outtake.setGoalXY(0,144)),
+                        new InstantCommand(()->robot.outtake.setGoalXY(144,144)),
                         new InstantCommand(()-> robot.outtake.setPadOffset(2)),
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(0.95)),
@@ -120,20 +116,20 @@ public class AUTO_RED extends LinearOpMode {
                         new SleepCommand(1),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
 
                 //BOTTOM SPIKE
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(bottomCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(bottomCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.5),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.5),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitBottomC),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitBottomC),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(bottomShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(bottomShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -141,30 +137,30 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.85)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitBottomS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitBottomS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
 
                 //FIRST
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(firstCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(firstCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.5),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.5),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFirstC),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFirstC),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(firstShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(firstShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -172,32 +168,32 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.95)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFirstS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFirstS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
 
                 //SECOND
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(secondCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(secondCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.45),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.45),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.85),
-                        new InstantCommand(()-> follower.followPath(slide1)),
-                        new WaitUntilCommand(()-> !follower.isBusy()|| pathTimer.seconds() > waitSecondC + 0.5),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.85),
+                        new InstantCommand(()-> robot.follower.followPath(slide1)),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy()|| pathTimer.seconds() > waitSecondC + 0.5),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(secondShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(secondShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(0.95)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -205,30 +201,30 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.98)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitSecondS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitSecondS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
 
                 //THIRD
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(thirdCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(thirdCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.45),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.45),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitThirdC),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitThirdC),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(thirdShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(thirdShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(0.98)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -236,31 +232,31 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.95)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitThirdS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitThirdS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
                 //FOURTH
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(fourthCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(fourthCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.45),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.45),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.85),
-                        new InstantCommand(()-> follower.followPath(slide2)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFourthC + 0.5),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.85),
+                        new InstantCommand(()-> robot.follower.followPath(slide2)),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFourthC + 0.5),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(fourthShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(fourthShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(0.98)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -268,29 +264,29 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFourthS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFourthS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
                 //FIFTH
                 new SequentialCommand(
                         //COLLECTING
-                        new InstantCommand(()-> follower.followPath(fifthCollect)),
+                        new InstantCommand(()-> robot.follower.followPath(fifthCollect)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.45),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.45),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFifthC),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFifthC),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         //SHOOTING
-                        new InstantCommand(()-> follower.followPath(fifthShoot)),
+                        new InstantCommand(()-> robot.follower.followPath(fifthShoot)),
                         new InstantCommand(()-> pathTimer.reset()),
                         new InstantCommand(()-> robot.outtake.setShooterMultiplier(0.98)),
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
@@ -298,30 +294,30 @@ public class AUTO_RED extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.AUTO)),
                         new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                        new WaitUntilCommand(()-> follower.getCurrentTValue() > 0.67),
+                        new WaitUntilCommand(()-> robot.follower.getCurrentTValue() > 0.67),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKING)),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitFifthS),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose())),
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitFifthS),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose())),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
                         new SleepCommand(0.05),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
                         new SleepCommand(0.75),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT))
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
                 ),
 
                 //PARK
                 new SequentialCommand(
                         new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
+                        new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE)),
                         new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                        new InstantCommand(()-> follower.followPath(park)),
+                        new InstantCommand(()-> robot.follower.followPath(park)),
                         new InstantCommand(()-> pathTimer.reset()),
-                        new WaitUntilCommand(()-> !follower.isBusy() || pathTimer.seconds() > waitPark),
-                        new InstantCommand(()-> follower.holdPoint(follower.getPose()))
+                        new WaitUntilCommand(()-> !robot.follower.isBusy() || pathTimer.seconds() > waitPark),
+                        new InstantCommand(()-> robot.follower.holdPoint(robot.follower.getPose()))
                 )
 
 
@@ -341,70 +337,70 @@ public class AUTO_RED extends LinearOpMode {
     }
 
     public void buildPaths() {
-        bottomCollect = follower.pathBuilder()
+        bottomCollect = robot.follower.pathBuilder()
                 .addPath(new BezierCurve(startPose, new Pose(118.5, 17), new Pose(118.5, 17), bottomCollectPose))
                 .setConstantHeadingInterpolation(bottomCollectPose.getHeading())
                 .build();
-        bottomShoot = follower.pathBuilder()
+        bottomShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(bottomCollectPose, bottomShootPose))
                 .setLinearHeadingInterpolation(bottomCollectPose.getHeading(), bottomShootPose.getHeading(), 0.75)
                 .build();
-        firstCollect = follower.pathBuilder()
+        firstCollect = robot.follower.pathBuilder()
                 .addPath(new BezierLine(bottomShootPose, firstCollectPose))
                 .setTangentHeadingInterpolation()
                 .build();
-        firstShoot = follower.pathBuilder()
+        firstShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(firstCollectPose, firstShootPose))
                 .setTangentHeadingInterpolation()
                 .setReversed()
                 .build();
-        secondCollect = follower.pathBuilder()
+        secondCollect = robot.follower.pathBuilder()
                 .addPath(new BezierLine(firstShootPose, secondCollectPose))
                 .setLinearHeadingInterpolation(firstCollectPose.getHeading(), secondCollectPose.getHeading(), 0.75)
                 .build();
-        slide1 = follower.pathBuilder()
+        slide1 = robot.follower.pathBuilder()
                 .addPath(new BezierCurve(secondCollectPose, new Pose(130, 47), slide1Pose))
                 .setLinearHeadingInterpolation(secondCollectPose.getHeading(), slide1Pose.getHeading(), 0.75)
                 .build();
-        secondShoot = follower.pathBuilder()
+        secondShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(slide1Pose, secondShootPose))
                 .setLinearHeadingInterpolation(slide1Pose.getHeading(), secondShootPose.getHeading(), 0.25)
                 .build();
-        thirdCollect = follower.pathBuilder()
+        thirdCollect = robot.follower.pathBuilder()
                 .addPath(new BezierLine(secondShootPose, thirdCollectPose))
                 .setTangentHeadingInterpolation()
                 .build();
-        thirdShoot = follower.pathBuilder()
+        thirdShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(thirdCollectPose, thirdShootPose))
                 .setTangentHeadingInterpolation()
                 .setReversed()
                 .build();
-        fourthCollect = follower.pathBuilder()
+        fourthCollect = robot.follower.pathBuilder()
                 .addPath(new BezierLine(thirdShootPose, fourthCollectPose))
                 .setTangentHeadingInterpolation()
                 .build();
-        slide2 = follower.pathBuilder()
+        slide2 = robot.follower.pathBuilder()
                 .addPath(new BezierCurve(fourthCollectPose, new Pose(130, 42), slide2Pose))
                 .setLinearHeadingInterpolation(fourthCollectPose.getHeading(), slide2Pose.getHeading(), 0.75)
                 .build();
-        fourthShoot = follower.pathBuilder()
+        fourthShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(slide2Pose, fourthShootPose))
                 .setLinearHeadingInterpolation(slide2Pose.getHeading(), fourthShootPose.getHeading(), 0.25)
                 .build();
-        fourthShoot = follower.pathBuilder()
+        fourthShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(fourthCollectPose, fourthShootPose))
                 .setTangentHeadingInterpolation()
                 .setReversed()
                 .build();
-        fifthCollect = follower.pathBuilder()
+        fifthCollect = robot.follower.pathBuilder()
                 .addPath(new BezierLine(fourthShootPose, fifthCollectPose))
                 .setTangentHeadingInterpolation()
                 .build();
-        fifthShoot = follower.pathBuilder()
+        fifthShoot = robot.follower.pathBuilder()
                 .addPath(new BezierLine(fifthCollectPose, fifthShootPose))
                 .setTangentHeadingInterpolation()
                 .build();
-        park = follower.pathBuilder()
+        park = robot.follower.pathBuilder()
                 .addPath(new BezierLine(fourthShootPose, parkPose))
                 .setConstantHeadingInterpolation(parkPose.getHeading())
                 .build();
