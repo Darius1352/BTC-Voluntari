@@ -10,9 +10,6 @@ import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.teamcode.utils.Motor;
 
 @Config
 public class Outtake {
@@ -21,6 +18,7 @@ public class Outtake {
     public DcMotorEx rightShooterMotor;
 
     public Servo hoodServo;
+    public Servo lockServo;
 
     public Servo leftTurretServo;
     public Servo rightTurretServo;
@@ -33,11 +31,11 @@ public class Outtake {
     public static double GOAL_Y = 0;
     public static double TURRET_CENTER_POS = 0.5;
     public static double TOTAL_SERVO_RANGE_DEGREES = 310;
-    public static double ROBOT_CENTER_TO_TURRET_DX = 2.657;
+    public static double ROBOT_CENTER_TO_TURRET_DX = 2.64228;//2.65748
     public static double ROBOT_CENTER_TO_TURRET_DY = 0;
     public static double TURRET_PIVOT_TO_BARREL = 1;
     public static double TPS_TO_INCHES_PER_SEC = 0.2;
-    public static double INERTIA_GAIN = 1.67;
+    public static double INERTIA_GAIN = 1.5;
     public static double ACCEL_FEEDFORWARD_GAIN = 0.005;
 
     private final PIDFController shooterPIDF;
@@ -46,23 +44,25 @@ public class Outtake {
     public static double TPS_TO_INCHES_FORWARD = 0.9;
     public static double SHOOTER_ACCEL_GAIN = 0.3;
     public static double skStatic = 0.125, skVelocity = 0.00043, skAcceleration = 0.01;
-    public static double sP = 0.0055;
+    public static double sP = 0.01, sD = 0;
     public static double test_TPS = 1000;
     public static double shooter_multiplier = 1;
     public static double targetTPS = 0;
     public static double power = 0;
 
-    public static double min_hood_position = 0.78, max_hood_position = 0;
+    public static double min_hood_position = 0.77, max_hood_position = 0;
     public static double test_hood_pose = 0.35;
     public static double hood_multiplier = 1;
 
     public static OuttakeState outtakeState;
     public static ShooterState shooterState;
     public static HoodState hoodState;
+    public static LockState lockState;
     public static TurretState turretState;
 
     public double distanceToGoal = 120;
     public static boolean DEBUG_DRAWING = false;
+    public static double hoodPose = 0.36;
 
     public enum OuttakeState {
         SHOOT(),
@@ -75,6 +75,7 @@ public class Outtake {
         INIT(0),
         IDLE(0),
         POWER(0),
+        PRESHOOT(0),
         TEST(0);
 
         double power;
@@ -105,6 +106,21 @@ public class Outtake {
         }
     }
 
+    public enum LockState {
+        TRANSFER(0.0439),
+        LOCKED(0.6);
+
+        double power;
+
+        LockState(double Power) {
+            this.power = Power;
+        }
+
+        double getPosition() {
+            return this.power;
+        }
+    }
+
     public enum TurretState {
         AUTO(0),
         FRONT(0),
@@ -121,20 +137,22 @@ public class Outtake {
         }
     }
 
-    public Outtake (DcMotorEx leftShooterMotor, DcMotorEx rightShooterMotor, Servo hoodServo, Servo leftTurretServo, Servo rightTurretServo) {
+    public Outtake (DcMotorEx leftShooterMotor, DcMotorEx rightShooterMotor, Servo hoodServo, Servo lockServo, Servo leftTurretServo, Servo rightTurretServo) {
 
         this.leftShooterMotor = leftShooterMotor;
         this.rightShooterMotor = rightShooterMotor;
         this.hoodServo = hoodServo;
+        this.lockServo = lockServo;
         this.leftTurretServo = leftTurretServo;
         this.rightTurretServo = rightTurretServo;
 
         setOuttakeState(OuttakeState.UNLOCALIZED);
         setHoodState(HoodState.FAR);
+        setLockState(LockState.LOCKED);
         setShooterState(ShooterState.IDLE);
         setTurretState(TurretState.FRONT);
 
-        this.shooterPIDF = new PIDFController(sP, 0, 0, 0);
+        this.shooterPIDF = new PIDFController(sP, 0, sD, 0);
         this.feedforward = new SimpleMotorFeedforward(skStatic, skVelocity, skAcceleration);
 
         this.leftShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -173,6 +191,13 @@ public class Outtake {
 
     public TurretState getTurretState() {
         return turretState;
+    }
+    public void setLockState(LockState newState){
+        lockState = newState;
+    }
+
+    public LockState getLockState(){
+        return lockState;
     }
 
     public OuttakeState getOuttakeState() {
@@ -228,6 +253,17 @@ public class Outtake {
         return degrees;
     }
 
+    private double calculateLockPosition() {
+        double lockPosition = 0.56;
+        if(getLockState() == LockState.LOCKED){
+            lockPosition = Math.min(0.64, Math.max((-0.0992541 * hoodPose + 0.634821), 0.55));
+        }
+        else if(getLockState() == LockState.TRANSFER){
+            lockPosition = 0.11;
+        }
+        return lockPosition;
+    }
+
     public void incrementShooterSlower(){
         shooter_multiplier -= 0.025;
     }
@@ -245,11 +281,11 @@ public class Outtake {
     }
 
     public void incrementTurretLeft(){
-        pad_offset -= 1.5;
+        pad_offset += 1.5;
     }
 
     public void incrementTurretRight(){
-        pad_offset += 1.5;
+        pad_offset -= 1.5;
     }
 
     public void setShooterMultiplier(double value){
@@ -373,7 +409,10 @@ public class Outtake {
             targetTPS = 0;
         }
         else if(getShooterState() == ShooterState.IDLE) {
-            targetTPS = 600;
+            targetTPS = 900;
+        }
+        else if(getShooterState() == ShooterState.PRESHOOT) {
+            targetTPS = 700;
         }
 
         if (getShooterState() != ShooterState.POWER) {
@@ -396,11 +435,17 @@ public class Outtake {
         }
 
         if(getHoodState() == HoodState.AUTO){
-            hoodServo.setPosition(calculateTargetHood(distanceToGoal));
+            hoodPose = (calculateTargetHood(distanceToGoal));
         }
         else if (getHoodState() == HoodState.TEST) {
-            hoodServo.setPosition(calculateTestTargetHood());
+            hoodPose = (calculateTestTargetHood());
         }
+        else {
+            hoodPose = hoodState.getPosition();
+        }
+        hoodServo.setPosition(hoodPose);
+
+        lockServo.setPosition(calculateLockPosition());
 
         double servoPos = angleToServoPos(target_angle);
         leftTurretServo.setPosition(1.0-servoPos);

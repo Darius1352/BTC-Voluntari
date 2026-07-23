@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.robo13u;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -14,8 +13,8 @@ import org.firstinspires.ftc.teamcode.commandbase.InstantCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SequentialCommand;
 import org.firstinspires.ftc.teamcode.commandbase.SleepCommand;
 import org.firstinspires.ftc.teamcode.commandbase.WaitUntilCommand;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.robo13u.subsystems.Lift;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 import org.firstinspires.ftc.teamcode.utils.GamepadEx;
 
@@ -26,8 +25,7 @@ public class TeleOp_BLUE extends LinearOpMode {
     private static Robot robot;
     private GamepadEx gamepad;
     private Command runningCommand;
-    private Follower follower;
-    private final Pose resetPose = new Pose(9, 9, Math.toRadians(180));
+    private final Pose resetPose = new Pose(133, 9, Math.toRadians(180));
     private final Pose basePose = new Pose(38, 33, Math.toRadians(90)); //225 - heading
     private PathChain base;
 
@@ -39,18 +37,17 @@ public class TeleOp_BLUE extends LinearOpMode {
         new SequentialCommand(
                 new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.FAR)),
                 new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
-                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.IDLE)),
-                new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.PRESHOOT)),
+                new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                 new InstantCommand(()-> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE)),
                 new InstantCommand(()-> robot.intake.setIntakeState(Intake.IntakeState.IDLE)),
-                new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
-                new InstantCommand(()-> robot.outtake.setHoodMultiplier(1)),
+                new InstantCommand(()-> robot.outtake.setShooterMultiplier(1.1)),
+                new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.8)),
                 new InstantCommand(()-> robot.outtake.setPadOffset(-2)),
                 new InstantCommand(()-> robot.outtake.setGoalXY(0,144))
         ).run(new TelemetryPacket());
 
-        follower = Constants.createFollower(hardwareMap);
         buildBasePath();
 
         waitForStart();
@@ -62,12 +59,14 @@ public class TeleOp_BLUE extends LinearOpMode {
                 if(robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.INTAKING) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED))
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.INTAKE))
                     );
                 } else if (robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.LOCKED) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED))
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.IDLE))
                     );
                 }
             }
@@ -76,86 +75,91 @@ public class TeleOp_BLUE extends LinearOpMode {
                 if(robot.intake.getIntakeMotorState()== Intake.IntakeMotorState.INTAKING || robot.intake.getIntakeMotorState()== Intake.IntakeMotorState.LOCKED) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.REVERSE)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.REVERSE)),
                             new SleepCommand(0.5),
-                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
+                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.IDLE))
                     );
                 }
-            }
-
-            if(gamepad.wasJustPressed(GamepadEx.Button.right_bumper)) {
-                if(robot.outtake.getShooterState() == Outtake.ShooterState.IDLE) {
-                    runningCommand = new SequentialCommand(
-                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
-                            new InstantCommand(() -> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                            new SleepCommand(0.5),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.TRANSFER)),
-                            new SleepCommand(0.05),
-                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                            new SleepCommand(1),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
-                    );
-                }
-                else if(robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT) {
-                    runningCommand = new SequentialCommand(
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.IDLE))
-                    );
-                }
-
             }
             /*
             if(gamepad.wasJustPressed(GamepadEx.Button.right_bumper)) {
-                if(robot.outtake.getShooterState() == Outtake.ShooterState.INIT) {
+                if (robot.outtake.getShooterState() == Outtake.ShooterState.PRESHOOT) {
+                    runningCommand = new SequentialCommand(
+                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
+                            new InstantCommand(() -> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.IDLE)),
+                            new InstantCommand(() -> robot.outtake.setOuttakeState(Outtake.OuttakeState.SHOOT)),
+                            new SleepCommand(0.25),
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.TRANSFER)),
+                            new SleepCommand(0.1),
+                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.INTAKE)),
+                            new SleepCommand(1),
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
+                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.PRESHOOT)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.IDLE)),
+                            new InstantCommand(() -> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE))
+                    );
+                } else if (robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT) {
+                    runningCommand = new SequentialCommand(
+                            new InstantCommand(() -> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
+                            new InstantCommand(() -> robot.outtake.setShooterState(Outtake.ShooterState.PRESHOOT)),
+                            new InstantCommand(() -> robot.intake.setIntakeState(Intake.IntakeState.IDLE)),
+                            new InstantCommand(() -> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE))
+                    );
+                }
+            }
+            */
+            if(gamepad.wasJustPressed(GamepadEx.Button.right_bumper)) {
+                if(robot.outtake.getShooterState() == Outtake.ShooterState.PRESHOOT) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
                     );
                 }
-                else if(robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT && robot.intake.getLockState() == Intake.LockState.LOCKED){
+                else if(robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT && robot.outtake.getLockState() == Outtake.LockState.LOCKED){
                     runningCommand = new SequentialCommand(
-                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.TRANSFER)),
                             new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
-                            new SleepCommand(0.05),
+                            new SleepCommand(0.25),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING))
                     );
                 }
-                else if(robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT && robot.intake.getLockState() == Intake.LockState.TRANSFER) {
+                else if(robot.outtake.getShooterState() == Outtake.ShooterState.SHOOT && robot.outtake.getLockState() == Outtake.LockState.TRANSFER) {
                     runningCommand = new SequentialCommand(
-                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
-                            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
+                            new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.PRESHOOT)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.AUTO)),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
                     );
                 }
             }
-             */
 
             if(gamepad.wasJustPressed(GamepadEx.Button.options)) {
                 runningCommand = new SequentialCommand(
                         new InstantCommand(() -> robot.outtake.setTurretState(Outtake.TurretState.BASE)),
+
+                        new InstantCommand(() -> robot.follower.setPose(resetPose)),
+                        new InstantCommand(() -> robot.follower.setPose(resetPose)),
+                        new InstantCommand(() -> robot.follower.setPose(resetPose)),
                         new SleepCommand(0.05),
 
-                        new InstantCommand(() -> follower.setStartingPose(resetPose)),
-                        new SleepCommand(0.05),
-
-                        new InstantCommand(() -> follower.followPath(base)),
-                        new WaitUntilCommand(() -> !follower.isBusy()),
-                        new InstantCommand(() -> follower.holdPoint(follower.getPose())),
-                        new SleepCommand(0.05)
-                        /*
+                        new InstantCommand(() -> robot.follower.followPath(base)),
+                        new WaitUntilCommand(() -> !robot.follower.isBusy()),
+                        new InstantCommand(() -> robot.follower.holdPoint(robot.follower.getPose())),
+                        new SleepCommand(0.1),
                         new InstantCommand(() -> robot.lift.setLiftState(Lift.LiftState.UP)),
                         new SleepCommand(0.5),
                         new InstantCommand(() -> robot.lift.setLiftState(Lift.LiftState.IDLE))
-                         */
                 );
             }
 
@@ -200,8 +204,8 @@ public class TeleOp_BLUE extends LinearOpMode {
 
                 runningCommand = new SequentialCommand(
                         new InstantCommand(()-> robot.outtake.setPadOffset(-2)),
-                        new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
-                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(1))
+                        new InstantCommand(()-> robot.outtake.setShooterMultiplier(1.1)),
+                        new InstantCommand(()-> robot.outtake.setHoodMultiplier(0.8))
                 );
             }
 
@@ -216,12 +220,13 @@ public class TeleOp_BLUE extends LinearOpMode {
             }
 
             robot.update();
+
         }
 
     }
 
-    public void buildBasePath() {
-        base = follower.pathBuilder()
+    private void buildBasePath() {
+        base = robot.follower.pathBuilder()
                 .addPath(new BezierLine(resetPose, basePose))
                 .setLinearHeadingInterpolation(resetPose.getHeading(), basePose.getHeading(), 0.75)
                 .build();

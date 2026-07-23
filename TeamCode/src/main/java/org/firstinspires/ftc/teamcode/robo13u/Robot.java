@@ -5,9 +5,6 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
-import com.pedropathing.localization.Localizer;
-import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -16,6 +13,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -50,7 +48,7 @@ public class Robot {
     public final Servo leftLED;
     public final Servo rightLED;
 
-    public final DigitalChannel leftSensor;
+    public final DistanceSensor leftSensor;
     public final DigitalChannel rightSensor;
 
     public final CRServo upLeftLiftServo;
@@ -99,7 +97,7 @@ public class Robot {
         leftLED = new ServoWrapper(hardwareMap.get(Servo.class, "leftLED"));
         rightLED = new ServoWrapper(hardwareMap.get(Servo.class, "rightLED"));
 
-        leftSensor = hardwareMap.get(DigitalChannel.class, "leftSensor");
+        leftSensor = hardwareMap.get(DistanceSensor.class, "leftSensor");
         rightSensor = hardwareMap.get(DigitalChannel.class, "rightSensor");
 
         upLeftLiftServo = new CRServoWrapper(hardwareMap.get(CRServo.class, "upLeftLiftServo"));
@@ -114,7 +112,6 @@ public class Robot {
         }
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
-        lastVoltageReading = voltageSensor.getVoltage();
 
         leftIntakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         rightIntakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -134,8 +131,8 @@ public class Robot {
         downRightLiftServo.setDirection(CRServo.Direction.FORWARD);
 
         mecanumDrive = new MecanumDrive(linearOpMode, this);
-        intake = new Intake(leftIntakeMotor, rightIntakeMotor, lockServo, leftLED, rightLED, leftSensor, rightSensor);
-        outtake = new Outtake(leftShooterMotor, rightShooterMotor, hoodServo, leftTurretServo, rightTurretServo);
+        intake = new Intake(leftIntakeMotor, rightIntakeMotor, leftLED, rightLED, leftSensor, rightSensor);
+        outtake = new Outtake(leftShooterMotor, rightShooterMotor, hoodServo, lockServo, leftTurretServo, rightTurretServo);
         lift = new Lift(upLeftLiftServo, downLeftLiftServo, upRightLiftServo, downRightLiftServo);
 
         allHubs = hardwareMap.getAll(LynxModule.class);
@@ -159,13 +156,14 @@ public class Robot {
         for (LynxModule hub : allHubs) {
             hub.clearBulkCache();
         }
-
+        /*
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastVoltageCheckTime > VOLTAGE_TIMEOUT_MS) {
             lastVoltageReading = voltageSensor.getVoltage();
             lastVoltageCheckTime = currentTime;
         }
-
+         */
+        lastVoltageReading = voltageSensor.getVoltage();
         intake.update(lastVoltageReading);
 
         follower.update();
@@ -175,7 +173,7 @@ public class Robot {
         Vector currentAcceleration = follower.getAcceleration();
 
         TelemetryPacket packet = new TelemetryPacket();
-        packet.clearLines();
+        //packet.clearLines();
 
         outtake.update(lastVoltageReading, currentPose, currentVelocity, currentAcceleration, packet);
 
@@ -187,9 +185,9 @@ public class Robot {
             packet.put("Looptime ms: ", String.format("%.2f ms", loopTime * 1000));
             //packet.put("Looptime hz: ", String.format("%.2f hz", 1.0 / loopTime));
             /*
-            packet.put("Robot Pose: ", follower.getPose().toString());
-            packet.put("Robot Velocity: ", follower.getVelocity().toString());
-            packet.put("Robot Acceleretion: ", follower.getAcceleration().toString());
+            packet.put("Robot Pose: ", poseTracker.getPose().toString());
+            packet.put("Robot Velocity: ", poseTracker.getVelocity().toString());
+            packet.put("Robot Acceleretion: ", poseTracker.getAcceleration().toString());
             packet.put("DistanceToGoal: ", outtake.getTrueShooterDistance(currentPose));
             packet.put("shooter RPM: ", (outtake.leftShooterMotor.getVelocity()) / 28.0 * 60.0);
             packet.put("ShooterMultiplier: ", outtake.getShooterMultiplier());

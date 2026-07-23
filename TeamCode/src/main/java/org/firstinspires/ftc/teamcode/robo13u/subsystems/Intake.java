@@ -4,24 +4,27 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.utils.Motor;
 
 @Config
 public class Intake {
     public DcMotorEx leftIntakeMotor;
     public DcMotorEx rightIntakeMotor;
-    public Servo lockServo;
-    public DigitalChannel leftSensor;
+    public DistanceSensor leftSensor;
     public DigitalChannel rightSensor;
     public Servo leftLED;
     public Servo rightLED;
     public IntakeState intakeState;
     public static IntakeMotorState intakeMotorState;
-    public static LockState lockState;
-    public static double COLOR_BALL = 0.67;
+    public static double COLOR_BALL = 0.5;
     public static double COLOR_EMPTY = 0;
+    private boolean cachedLeftBall = false;
+    private final ElapsedTime distanceTimer = new ElapsedTime();
 
     public enum IntakeState{
         INTAKE,
@@ -47,25 +50,9 @@ public class Intake {
         }
     }
 
-    public enum LockState {
-        TRANSFER(0.8567),
-        LOCKED(0.7139);
-
-        double power;
-
-        LockState(double Power) {
-            this.power = Power;
-        }
-
-        double getPosition() {
-            return this.power;
-        }
-    }
-
-    public Intake(DcMotorEx leftIntakeMotor, DcMotorEx rightIntakeMotor, Servo lockServo, Servo leftLED, Servo rightLED, DigitalChannel leftSensor, DigitalChannel rightSensor){
+    public Intake(DcMotorEx leftIntakeMotor, DcMotorEx rightIntakeMotor, Servo leftLED, Servo rightLED, DistanceSensor leftSensor, DigitalChannel rightSensor){
         this.leftIntakeMotor = leftIntakeMotor;
         this.rightIntakeMotor = rightIntakeMotor;
-        this.lockServo = lockServo;
         this.leftLED = leftLED;
         this.rightLED = rightLED;
         this.leftSensor = leftSensor;
@@ -74,23 +61,14 @@ public class Intake {
         leftLED.setPosition(COLOR_BALL);
         rightLED.setPosition(COLOR_BALL);
 
-        leftSensor.setMode(DigitalChannel.Mode.INPUT);
         rightSensor.setMode(DigitalChannel.Mode.INPUT);
+        distanceTimer.reset();
 
-        setLockState(LockState.LOCKED);
         setIntakeMotorState(IntakeMotorState.LOCKED);
         setIntakeState(IntakeState.IDLE);
 
         this.leftIntakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         this.rightIntakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-    }
-
-    public void setLockState(LockState newState){
-        lockState = newState;
-    }
-
-    public LockState getLockState(){
-        return lockState;
     }
 
     public void setIntakeState(IntakeState newIntakeState) {
@@ -108,7 +86,12 @@ public class Intake {
     }
 
     public boolean hasLeftBall() {
-        return !leftSensor.getState();
+        if (distanceTimer.seconds() >= 0.05) {
+            double distance = leftSensor.getDistance(DistanceUnit.MM);
+            cachedLeftBall = !Double.isNaN(distance) && distance <= 20.0;
+            distanceTimer.reset();
+        }
+        return cachedLeftBall;
     }
 
     public boolean hasRightBall() {
@@ -116,7 +99,6 @@ public class Intake {
     }
 
     public void update(double voltage){
-        lockServo.setPosition(lockState.getPosition());
         double intakePower = intakeMotorState.getPower() * (12.0 / voltage);
         leftIntakeMotor.setPower(intakePower);
         rightIntakeMotor.setPower(intakePower);
@@ -124,7 +106,6 @@ public class Intake {
         leftLED.setPosition(hasLeftBall() ? COLOR_BALL : COLOR_EMPTY);
         rightLED.setPosition(hasRightBall() ? COLOR_BALL : COLOR_EMPTY);
          */
-
     }
 
 }

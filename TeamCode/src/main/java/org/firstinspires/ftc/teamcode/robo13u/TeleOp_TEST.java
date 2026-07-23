@@ -44,7 +44,7 @@ public class TeleOp_TEST extends LinearOpMode {
                 new InstantCommand(()-> robot.outtake.setTurretState(Outtake.TurretState.FRONT)),
                 new InstantCommand(()-> robot.outtake.setShooterMultiplier(1)),
                 new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
-                new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
                 new InstantCommand(()-> robot.outtake.setOuttakeState(Outtake.OuttakeState.IDLE)),
                 new InstantCommand(()-> robot.intake.setIntakeState(Intake.IntakeState.IDLE)),
@@ -63,12 +63,12 @@ public class TeleOp_TEST extends LinearOpMode {
                 if(robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.INTAKING) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED))
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED))
                     );
                 } else if (robot.intake.getIntakeMotorState()!= Intake.IntakeMotorState.LOCKED) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED))
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED))
                     );
                 }
             }
@@ -77,7 +77,7 @@ public class TeleOp_TEST extends LinearOpMode {
                 if(robot.intake.getIntakeMotorState()== Intake.IntakeMotorState.INTAKING || robot.intake.getIntakeMotorState()== Intake.IntakeMotorState.LOCKED) {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.REVERSE)),
-                            new InstantCommand(() -> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                             new SleepCommand(0.5),
                             new InstantCommand(() -> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
                     );
@@ -89,22 +89,22 @@ public class TeleOp_TEST extends LinearOpMode {
                     runningCommand = new SequentialCommand(
                             new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
-                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
                     );
                 }
-                else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.intake.getLockState() == Intake.LockState.LOCKED){
+                else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.outtake.getLockState() == Outtake.LockState.LOCKED){
                         runningCommand = new SequentialCommand(
-                                new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.TRANSFER)),
+                                new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.TRANSFER)),
                                 new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.TEST)),
                                 new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
-                                new SleepCommand(0.05),
+                                new SleepCommand(0.25),
                                 new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.INTAKING))
                         );
                 }
-                else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.intake.getLockState() == Intake.LockState.TRANSFER) {
+                else if(robot.outtake.getShooterState() == Outtake.ShooterState.TEST && robot.outtake.getLockState() == Outtake.LockState.TRANSFER) {
                     runningCommand = new SequentialCommand(
-                            new InstantCommand(()-> robot.intake.setLockState(Intake.LockState.LOCKED)),
+                            new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                             new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
                             new InstantCommand(()-> robot.outtake.setHoodState(Outtake.HoodState.TEST)),
                             new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))

@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.robo13u.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.robo13u.subsystems.Outtake;
 
 @Autonomous
-public class AUTO_BLUE extends LinearOpMode {
+public class AUTO_BLUE_FAST extends LinearOpMode {
     private static Robot robot;
     private ElapsedTime pathTimer;
     private final Pose startPose = new Pose(40, 9, Math.toRadians(90));
@@ -51,7 +51,7 @@ public class AUTO_BLUE extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         robot = new Robot(this, startPose);
         robot.mecanumDrive.imu.resetYaw();
-        
+
         pathTimer = new ElapsedTime();
 
         buildPaths();
@@ -77,7 +77,7 @@ public class AUTO_BLUE extends LinearOpMode {
                     new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.INIT)),
                     new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                     new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
-                    ).run(new TelemetryPacket());
+            ).run(new TelemetryPacket());
         }
 
         Command mainCommand = new SequentialCommand(
@@ -90,7 +90,7 @@ public class AUTO_BLUE extends LinearOpMode {
                         new InstantCommand(()-> robot.outtake.setShooterState(Outtake.ShooterState.SHOOT)),
                         new InstantCommand(()-> robot.outtake.setLockState(Outtake.LockState.LOCKED)),
                         new InstantCommand(()-> robot.intake.setIntakeMotorState(Intake.IntakeMotorState.LOCKED))
-                        ),
+                ),
 
                 //PRELOAD
                 new SequentialCommand(
